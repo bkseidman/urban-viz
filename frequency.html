@@ -1,1 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Frequency Distribution</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.4;
+      }
 
+      h1 {
+        margin-bottom: 6px;
+      }
+
+      .note {
+        color: #444;
+        margin-bottom: 20px;
+      }
+
+      svg {
+        display: block;
+        margin-top: 20px;
+      }
+
+      .axis-label {
+        font-size: 14px;
+      }
+
+      .chart-title {
+        font-size: 18px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Frequency Distribution</h1>
+    <p class="note">
+      This chart shows how many street segments fall into each monthly sweeping frequency.
+    </p>
+
+    <svg id="chart" width="900" height="500"></svg>
+
+    <p><a href="index.html">Back to index</a></p>
+
+    <script src="js/frequency.js"></script>
+  </body>
+</html>
