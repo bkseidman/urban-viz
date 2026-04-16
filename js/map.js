@@ -3,11 +3,11 @@ const width = +svg.attr("width");
 const height = +svg.attr("height");
 
 Promise.all([
-  d3.json("data/raw/Streets_-_Active_and_Retired_20260416.geojson"),
+  d3.json("data/raw/active_streets.geojson"),
   d3.csv("data/processed/cnn_totals.csv")
 ]).then(([geoData, freqData]) => {
 
-  // Build lookup map from CSV
+  // Build lookup map
   const freqMap = new Map();
   freqData.forEach(d => {
     freqMap.set(String(d.cnn), {
@@ -16,7 +16,7 @@ Promise.all([
     });
   });
 
-  // Attach frequency data to geo features
+  // Attach data to geo features
   let matched = 0;
 
   geoData.features.forEach(feature => {
@@ -25,7 +25,6 @@ Promise.all([
 
     if (match) {
       matched++;
-      feature.properties.monthly_frequency = match.monthly_frequency;
       feature.properties.frequency_group = match.frequency_group;
     } else {
       feature.properties.frequency_group = "No data";
@@ -34,13 +33,13 @@ Promise.all([
 
   console.log("Matched features:", matched);
 
-  // Projection + path
+  // Projection
   const projection = d3.geoMercator()
     .fitSize([width, height], geoData);
 
   const path = d3.geoPath().projection(projection);
 
-  // Simplified color scale (better for map)
+  // Color scale (simple + clean for map)
   const color = d3.scaleOrdinal()
     .domain(["1-20", "21-40", "41-60", "61-80", "81+", "No data"])
     .range([
@@ -60,9 +59,9 @@ Promise.all([
     .attr("d", path)
     .attr("fill", "none")
     .attr("stroke", d => color(d.properties.frequency_group))
-    .attr("stroke-width", 1.2)
+    .attr("stroke-width", 1)
     .attr("stroke-linecap", "round")
-    .attr("opacity", 0.9);
+    .attr("opacity", 0.85);
 
   // Legend
   const legendData = ["1-20", "21-40", "41-60", "61-80", "81+", "No data"];
