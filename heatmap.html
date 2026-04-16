@@ -1,1 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Time vs Weekday Heatmap</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.4;
+      }
 
+      h1 {
+        margin-bottom: 6px;
+      }
+
+      .note {
+        color: #444;
+        margin-bottom: 20px;
+      }
+
+      svg {
+        display: block;
+        margin-top: 20px;
+      }
+
+      .axis-label {
+        font-size: 14px;
+      }
+
+      .chart-title {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .cell-label {
+        font-size: 11px;
+        fill: black;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Time vs Weekday Heatmap</h1>
+    <p class="note">
+      This heatmap shows when street sweeping events occur across weekdays and time buckets.
+    </p>
+
+    <svg id="heatmap" width="950" height="520"></svg>
+
+    <p><a href="index.html">Back to index</a></p>
+
+    <script src="js/heatmap.js"></script>
+  </body>
+</html>
