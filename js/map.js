@@ -6,9 +6,8 @@ Promise.all([
   d3.json("data/raw/active_streets.geojson"),
   d3.csv("data/processed/cnn_totals.csv")
 ]).then(([geoData, freqData]) => {
-
-  // Build lookup map
   const freqMap = new Map();
+
   freqData.forEach(d => {
     freqMap.set(String(d.cnn), {
       monthly_frequency: +d.monthly_frequency,
@@ -16,7 +15,6 @@ Promise.all([
     });
   });
 
-  // Attach data to geo features
   let matched = 0;
 
   geoData.features.forEach(feature => {
@@ -33,38 +31,47 @@ Promise.all([
 
   console.log("Matched features:", matched);
 
-  // Projection
   const projection = d3.geoMercator()
     .fitSize([width, height], geoData);
 
   const path = d3.geoPath().projection(projection);
 
-  // Color scale (simple + clean for map)
   const color = d3.scaleOrdinal()
-    .domain(["1-20", "21-40", "41-60", "61-80", "81+", "No data"])
+    .domain(["1-20", "21-50", "51+"])
     .range([
-      "#dbe9f6",
       "#9ecae1",
-      "#6baed6",
       "#3182bd",
-      "#08519c",
-      "#cccccc"
+      "#08519c"
     ]);
 
-  // Draw streets
-  svg.selectAll("path")
+  // Background streets: all streets in light gray
+  svg.selectAll(".base-street")
     .data(geoData.features)
     .enter()
     .append("path")
+    .attr("class", "base-street")
+    .attr("d", path)
+    .attr("fill", "none")
+    .attr("stroke", "#d9d9d9")
+    .attr("stroke-width", 1)
+    .attr("stroke-linecap", "round")
+    .attr("opacity", 0.7);
+
+  // Overlay only matched streets with stronger colors
+  svg.selectAll(".sweep-street")
+    .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
+    .enter()
+    .append("path")
+    .attr("class", "sweep-street")
     .attr("d", path)
     .attr("fill", "none")
     .attr("stroke", d => color(d.properties.frequency_group))
-    .attr("stroke-width", 1)
+    .attr("stroke-width", 1.8)
     .attr("stroke-linecap", "round")
-    .attr("opacity", 0.85);
+    .attr("opacity", 0.95);
 
   // Legend
-  const legendData = ["1-20", "21-40", "41-60", "61-80", "81+", "No data"];
+  const legendData = ["1-20", "21-50", "51+"];
 
   const legend = svg.append("g")
     .attr("transform", "translate(20,20)");
@@ -74,7 +81,7 @@ Promise.all([
     .enter()
     .append("rect")
     .attr("x", 0)
-    .attr("y", (d, i) => i * 22)
+    .attr("y", (d, i) => i * 24)
     .attr("width", 16)
     .attr("height", 16)
     .attr("fill", d => color(d));
@@ -84,7 +91,7 @@ Promise.all([
     .enter()
     .append("text")
     .attr("x", 24)
-    .attr("y", (d, i) => i * 22 + 13)
+    .attr("y", (d, i) => i * 24 + 13)
     .text(d => d);
 
 }).catch(error => {
