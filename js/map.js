@@ -6,63 +6,71 @@ Promise.all([
   d3.json("data/raw/active_streets.geojson"),
   d3.csv("data/processed/cnn_totals.csv")
 ]).then(([geoData, freqData]) => {
+
   const freqMap = new Map();
 
   freqData.forEach(d => {
     freqMap.set(String(d.cnn), {
-      monthly_frequency: +d.monthly_frequency,
       frequency_group: d.frequency_group
     });
   });
-
-  let matched = 0;
 
   geoData.features.forEach(feature => {
     const cnn = String(feature.properties.cnn);
     const match = freqMap.get(cnn);
 
     if (match) {
-      matched++;
       feature.properties.frequency_group = match.frequency_group;
     } else {
       feature.properties.frequency_group = "No data";
     }
   });
 
-  console.log("Matched features:", matched);
-
   const projection = d3.geoMercator()
     .fitSize([width, height], geoData);
 
   const path = d3.geoPath().projection(projection);
 
+  // Stronger color ramp (more contrast)
+  const order = [
+    "1-10","11-20","21-30","31-40","41-50",
+    "51-60","61-70","71-80","81-90","91-100","101+"
+  ];
+
   const color = d3.scaleOrdinal()
-    .domain(["1-20", "21-50", "51+"])
+    .domain(order)
     .range([
-      "#9ecae1",
-      "#3182bd",
-      "#08519c"
+      "#e3f2fd",
+      "#cfe8f7",
+      "#b6dbef",
+      "#9ccdea",
+      "#7fbbe2",
+      "#64a7d7",
+      "#4a91cb",
+      "#327abf",
+      "#1f66b2",
+      "#0f4f9e",
+      "#08306b"
     ]);
 
-  // Background streets: all streets in light gray
-  svg.selectAll(".base-street")
+  //  Base layer (all streets)
+  svg.selectAll(".base")
     .data(geoData.features)
     .enter()
     .append("path")
-    .attr("class", "base-street")
+    .attr("class", "base")
     .attr("d", path)
     .attr("fill", "none")
     .attr("stroke", "#d9d9d9")
-    .attr("stroke-width", 1)
-    .attr("stroke-linecap", "round")
+    .attr("stroke-width", 0.8)
     .attr("opacity", 0.7);
 
-  // Overlay only matched streets with stronger colors
-  svg.selectAll(".sweep-street")
+  // Overlay layer (only streets with data)
+  svg.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
     .enter()
     .append("path")
-    .attr("class", "sweep-street")
+    .attr("class", "overlay")
     .attr("d", path)
     .attr("fill", "none")
     .attr("stroke", d => color(d.properties.frequency_group))
@@ -70,29 +78,28 @@ Promise.all([
     .attr("stroke-linecap", "round")
     .attr("opacity", 0.95);
 
-  // Legend
-  const legendData = ["1-20", "21-50", "51+"];
-
+  // Legend (ordered properly)
   const legend = svg.append("g")
     .attr("transform", "translate(20,20)");
 
   legend.selectAll("rect")
-    .data(legendData)
+    .data(order)
     .enter()
     .append("rect")
     .attr("x", 0)
-    .attr("y", (d, i) => i * 24)
-    .attr("width", 16)
-    .attr("height", 16)
+    .attr("y", (d, i) => i * 20)
+    .attr("width", 14)
+    .attr("height", 14)
     .attr("fill", d => color(d));
 
   legend.selectAll("text")
-    .data(legendData)
+    .data(order)
     .enter()
     .append("text")
-    .attr("x", 24)
-    .attr("y", (d, i) => i * 24 + 13)
-    .text(d => d);
+    .attr("x", 20)
+    .attr("y", (d, i) => i * 20 + 11)
+    .text(d => d)
+    .style("font-size", "12px");
 
 }).catch(error => {
   console.error("Error loading map data:", error);
