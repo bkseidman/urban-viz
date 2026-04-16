@@ -2,7 +2,7 @@ const svg = d3.select("#chart");
 const width = +svg.attr("width");
 const height = +svg.attr("height");
 
-const margin = { top: 60, right: 30, bottom: 70, left: 70 };
+const margin = { top: 60, right: 30, bottom: 80, left: 80 };
 const innerWidth = width - margin.left - margin.right;
 const innerHeight = height - margin.top - margin.bottom;
 
@@ -11,14 +11,27 @@ const g = svg.append("g")
 
 d3.csv("data/processed/frequency_distribution.csv").then(data => {
   data.forEach(d => {
-    d.frequency = +d.frequency;
     d.count = +d.count;
   });
 
-  data.sort((a, b) => a.frequency - b.frequency);
+  const order = [
+    "1-10",
+    "11-20",
+    "21-30",
+    "31-40",
+    "41-50",
+    "51-60",
+    "61-70",
+    "71-80",
+    "81-90",
+    "91-100",
+    "101+"
+  ];
+
+  data.sort((a, b) => order.indexOf(a.frequency) - order.indexOf(b.frequency));
 
   const x = d3.scaleBand()
-    .domain(data.map(d => d.frequency))
+    .domain(order)
     .range([0, innerWidth])
     .padding(0.2);
 
@@ -64,9 +77,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   svg.append("text")
     .attr("class", "axis-label")
     .attr("x", width / 2)
-    .attr("y", height - 15)
+    .attr("y", height - 20)
     .attr("text-anchor", "middle")
-    .text("Monthly Frequency");
+    .text("Monthly Frequency Group");
 
   svg.append("text")
     .attr("class", "axis-label")
