@@ -16,12 +16,7 @@ Promise.all([
   });
 
   geoData.features.forEach(feature => {
-    const cnn = String(
-      feature.properties.CNN ??
-      feature.properties.cnn ??
-      feature.properties.Cnn ?? ""
-    );
-
+    const cnn = String(feature.properties.cnn);
     const match = freqMap.get(cnn);
 
     if (match) {
@@ -40,31 +35,19 @@ Promise.all([
 
   const color = d3.scaleOrdinal()
     .domain([
-      "1-10",
-      "11-20",
-      "21-30",
-      "31-40",
-      "41-50",
-      "51-60",
-      "61-70",
-      "71-80",
-      "81-90",
-      "91-100",
-      "101+",
+      "1-20",
+      "21-40",
+      "41-60",
+      "61-80",
+      "81+",
       "No data"
     ])
     .range([
-      "#edf8fb",
-      "#d6eef5",
-      "#bde2ec",
-      "#9fd3df",
-      "#7fc2d2",
-      "#5eaec2",
-      "#4292b2",
-      "#2b7b9f",
-      "#1f6488",
-      "#154d70",
-      "#0d3557",
+      "#dbe9f6",
+      "#9ecae1",
+      "#6baed6",
+      "#3182bd",
+      "#08519c",
       "#cccccc"
     ]);
 
@@ -75,24 +58,11 @@ Promise.all([
     .attr("d", path)
     .attr("fill", "none")
     .attr("stroke", d => color(d.properties.frequency_group))
-    .attr("stroke-width", 1)
+    .attr("stroke-width", 1.2)
     .attr("stroke-linecap", "round")
     .attr("opacity", 0.9);
 
-  const legendData = [
-    "1-10",
-    "11-20",
-    "21-30",
-    "31-40",
-    "41-50",
-    "51-60",
-    "61-70",
-    "71-80",
-    "81-90",
-    "91-100",
-    "101+",
-    "No data"
-  ];
+  const legendData = ["1-20", "21-40", "41-60", "61-80", "81+", "No data"];
 
   const legend = svg.append("g")
     .attr("class", "legend")
