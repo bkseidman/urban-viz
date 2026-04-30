@@ -10,7 +10,7 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        margin: 40px;
+        margin: 30px;
         line-height: 1.4;
         background: #fafafa;
         color: #222;
@@ -22,30 +22,26 @@
 
       h2 {
         margin-top: 0;
+        margin-bottom: 8px;
       }
 
       .subtitle {
         color: #444;
-        max-width: 950px;
-        margin-bottom: 24px;
-      }
-
-      .section {
-        margin-bottom: 42px;
+        max-width: 1200px;
+        margin-bottom: 22px;
       }
 
       .dashboard-layout {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1000px 520px 320px;
         gap: 24px;
-        align-items: flex-start;
+        align-items: start;
       }
 
-      .map-column {
-        flex: 1;
-      }
-
+      .map-column,
+      .charts-column,
       .side-column {
-        width: 320px;
+        min-width: 0;
       }
 
       svg {
@@ -56,6 +52,26 @@
       #map {
         display: block;
         background: #f8f8f8;
+      }
+
+      .chart-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .chart-card h2 {
+        font-size: 20px;
+      }
+
+      .chart-card p {
+        color: #444;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        font-size: 13px;
       }
 
       #detail-panel {
@@ -127,47 +143,57 @@
         font-size: 12px;
       }
 
-      .chart-row {
-        display: flex;
-        gap: 28px;
-        align-items: flex-start;
-        flex-wrap: wrap;
-      }
-
-      .chart-card {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 18px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      }
-
-      .chart-card p {
-        max-width: 720px;
-        color: #444;
-        margin-top: 4px;
-      }
-
       .chart-title {
         font-weight: bold;
-        font-size: 16px;
+        font-size: 15px;
       }
 
       .axis-label {
-        font-size: 13px;
+        font-size: 12px;
       }
 
       .bar-label {
-        font-size: 11px;
+        font-size: 10px;
       }
 
       .cell-label {
-        font-size: 11px;
+        font-size: 10px;
         pointer-events: none;
       }
 
       .nav-link {
         margin-top: 28px;
+      }
+
+      @media (max-width: 1500px) {
+        .dashboard-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .charts-column {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .chart-card {
+          margin-bottom: 0;
+        }
+      }
+
+      @media (max-width: 900px) {
+        body {
+          margin: 18px;
+        }
+
+        .charts-column {
+          display: block;
+        }
+
+        #map {
+          width: 100%;
+          height: auto;
+        }
       }
     </style>
   </head>
@@ -181,48 +207,46 @@
       individual sweeping schedules. The heatmap and frequency chart provide citywide context.
     </p>
 
-    <section class="section">
-      <div class="dashboard-layout">
-        <div class="map-column">
-          <h2>Interactive Street Sweeping Map</h2>
-          <p class="subtitle">
-            Streets are colored by grouped monthly sweeping frequency. Hover for a quick preview,
-            click for full schedule details, and zoom or pan to inspect smaller areas.
+    <main class="dashboard-layout">
+      <section class="map-column">
+        <h2>Interactive Street Sweeping Map</h2>
+        <p class="subtitle">
+          Streets are colored by grouped monthly sweeping frequency. Hover for a quick preview,
+          click for full schedule details, and zoom or pan to inspect smaller areas.
+        </p>
+
+        <svg id="map" width="1000" height="800"></svg>
+      </section>
+
+      <section class="charts-column">
+        <div class="chart-card">
+          <h2>Weekday and Time Pattern</h2>
+          <p>
+            Click a heatmap cell to highlight streets swept during that weekday and time bucket.
           </p>
-
-          <svg id="map" width="1000" height="800"></svg>
+          <svg id="heatmap" width="500" height="360"></svg>
         </div>
 
-        <div class="side-column">
-          <div id="detail-panel">
-            <h2>Selected Street</h2>
-            <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
-          </div>
-
-          <button id="reset-selection" type="button">
-            Reset selection
-          </button>
+        <div class="chart-card">
+          <h2>Frequency Distribution</h2>
+          <p>
+            Click a bar to highlight streets in that monthly frequency group.
+          </p>
+          <svg id="chart" width="500" height="360"></svg>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section chart-row">
-      <div class="chart-card">
-        <h2>Weekday and Time Pattern</h2>
-        <p>
-          This heatmap shows when street sweeping happens most often across the full dataset.
-        </p>
-        <svg id="heatmap" width="720" height="450"></svg>
-      </div>
+      <aside class="side-column">
+        <div id="detail-panel">
+          <h2>Selected Street</h2>
+          <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
+        </div>
 
-      <div class="chart-card">
-        <h2>Frequency Distribution</h2>
-        <p>
-          This chart shows how many street segments fall into each monthly sweeping frequency group.
-        </p>
-        <svg id="chart" width="720" height="450"></svg>
-      </div>
-    </section>
+        <button id="reset-selection" type="button">
+          Reset selection
+        </button>
+      </aside>
+    </main>
 
     <div id="map-tooltip"></div>
 
