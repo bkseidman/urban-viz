@@ -94,7 +94,7 @@ function updateDetailPanel(d) {
 
     <hr>
 
-    <p><strong>Monthly scheduled occurrences:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
+    <p><strong>Estimated sweeps per month:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
     <p><strong>Frequency group:</strong> ${valueOrUnknown(details.frequency_group)}</p>
     <p><strong>Days cleaned:</strong> ${valueOrUnknown(details.days_cleaned)}</p>
     <p><strong>Time ranges:</strong> ${valueOrUnknown(details.time_ranges)}</p>
@@ -153,13 +153,25 @@ Promise.all([
   const path = d3.geoPath().projection(projection);
 
   const order = [
-    "1-10", "11-20", "21-30", "31-40", "41-50",
-    "51-60", "61-70", "71-80", "81-90", "91-100", "101+"
+    "1-4",
+    "5-8",
+    "9-12",
+    "13-16",
+    "17-20",
+    "21-24",
+    "25-28",
+    "29-32",
+    "33-36",
+    "37-40",
+    "41-44",
+    "45-48",
+    "49+"
   ];
 
   const color = d3.scaleOrdinal()
     .domain(order)
     .range([
+      "#f7fbff",
       "#e3f2fd",
       "#cfe8f7",
       "#b6dbef",
@@ -170,7 +182,8 @@ Promise.all([
       "#327abf",
       "#1f66b2",
       "#0f4f9e",
-      "#08306b"
+      "#083b7a",
+      "#041f4a"
     ]);
 
   const tooltip = d3.select("#map-tooltip");
@@ -228,7 +241,7 @@ Promise.all([
         .html(`
           <strong>${getStreetName(d)}</strong><br>
           ${details && details.limits ? `${details.limits}<br>` : ""}
-          Monthly scheduled occurrences: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
+          Estimated sweeps per month: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
           Days: ${details ? details.days_cleaned : "Unknown"}<br>
           Time: ${details ? details.time_ranges : "Unknown"}
         `);
@@ -366,7 +379,7 @@ Promise.all([
     applyMapStyles();
 
     updatePatternPanel(
-      "Frequency Group",
+      "Estimated Sweeps per Month",
       frequencyGroup,
       matchCount
     );
