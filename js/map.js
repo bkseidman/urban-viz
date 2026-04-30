@@ -94,7 +94,7 @@ function updateDetailPanel(d) {
 
     <hr>
 
-    <p><strong>Monthly frequency:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
+    <p><strong>Monthly scheduled occurrences:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
     <p><strong>Frequency group:</strong> ${valueOrUnknown(details.frequency_group)}</p>
     <p><strong>Days cleaned:</strong> ${valueOrUnknown(details.days_cleaned)}</p>
     <p><strong>Time ranges:</strong> ${valueOrUnknown(details.time_ranges)}</p>
@@ -228,7 +228,7 @@ Promise.all([
         .html(`
           <strong>${getStreetName(d)}</strong><br>
           ${details && details.limits ? `${details.limits}<br>` : ""}
-          Frequency: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
+          Monthly scheduled occurrences: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
           Days: ${details ? details.days_cleaned : "Unknown"}<br>
           Time: ${details ? details.time_ranges : "Unknown"}
         `);
@@ -344,7 +344,7 @@ Promise.all([
     d3.select("#detail-panel").html(`
       <h2>${title}</h2>
       <p><strong>Selected pattern:</strong> ${value}</p>
-      <p><strong>Matching street segments:</strong> ${count}</p>
+      <p><strong>Matching street segments highlighted:</strong> ${count}</p>
       <p class="hint">
         Streets matching this chart selection are highlighted on the map.
         Click an individual street to return to street-level details.
@@ -372,7 +372,7 @@ Promise.all([
     );
   };
 
-  window.highlightMapByHeatmapCells = function(heatmapCells) {
+  window.highlightMapByHeatmapCells = function(heatmapCells, heatmapValue) {
     selectedStreet = null;
     activeMapMode = "heatmap";
     activeFrequencyGroup = null;
@@ -391,11 +391,16 @@ Promise.all([
 
     applyMapStyles();
 
-    updatePatternPanel(
-      "Weekday / Time Selection",
-      heatmapCells,
-      matchCount
-    );
+    d3.select("#detail-panel").html(`
+      <h2>Weekday / Time Selection</h2>
+      <p><strong>Selected pattern:</strong> ${heatmapCells}</p>
+      <p><strong>Matching street segments highlighted:</strong> ${matchCount}</p>
+      <p><strong>Heatmap cell value:</strong> ${heatmapValue} estimated monthly scheduled occurrences</p>
+      <p class="hint">
+        The heatmap value counts scheduled monthly sweeping occurrences.
+        The map highlight counts unique street segments, so these numbers can be different.
+      </p>
+    `);
   };
 
   window.resetDashboardSelection = function() {
