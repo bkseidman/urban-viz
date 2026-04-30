@@ -49,7 +49,19 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("width", x.bandwidth())
     .attr("height", y.bandwidth())
     .attr("fill", d => color(d.count))
-    .attr("opacity", 0.9);
+    .attr("opacity", 0.9)
+    .style("cursor", "pointer")
+    .on("click", function(event, d) {
+      const selectedCell = `${d.weekday}|${d.time_bucket}`;
+
+      if (window.highlightHeatmapCells) {
+        window.highlightHeatmapCells(selectedCell);
+      }
+
+      if (window.highlightMapByHeatmapCells) {
+        window.highlightMapByHeatmapCells(selectedCell);
+      }
+    });
 
   heatG.selectAll(".cell-label")
     .data(data)
