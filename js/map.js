@@ -86,7 +86,7 @@ function updateDetailPanel(d) {
     <p><strong>Swept on holidays:</strong> ${yesNo(details.holidays)}</p>
 
     <p class="hint">
-      The frequency chart and heatmap are now highlighting the selected street's matching patterns.
+      The frequency chart and heatmap are highlighting this street's matching patterns.
     </p>
   `);
 }
@@ -272,6 +272,102 @@ Promise.all([
     .attr("y", (d, i) => i * 20 + 11)
     .text(d => d)
     .style("font-size", "12px");
+
+  function updatePatternPanel(title, value, count) {
+    d3.select("#detail-panel").html(`
+      <h2>${title}</h2>
+      <p><strong>Selected pattern:</strong> ${value}</p>
+      <p><strong>Matching street segments:</strong> ${count}</p>
+      <p class="hint">
+        Streets matching this chart selection are highlighted on the map.
+        Click an individual street to return to street-level details.
+      </p>
+    `);
+  }
+
+  window.highlightMapByFrequencyGroup = function(frequencyGroup) {
+    selectedStreet = null;
+
+    let matchCount = 0;
+
+    d3.selectAll(".overlay")
+      .classed("selected", false)
+      .attr("stroke", d => {
+        const match = d.properties.frequency_group === frequencyGroup;
+
+        if (match) {
+          matchCount += 1;
+          return "#000";
+        }
+
+        return color(d.properties.frequency_group);
+      })
+      .attr("stroke-width", d => {
+        return d.properties.frequency_group === frequencyGroup ? 3.5 : 1.2;
+      })
+      .attr("opacity", d => {
+        return d.properties.frequency_group === frequencyGroup ? 1 : 0.12;
+      });
+
+    updatePatternPanel(
+      "Frequency Group",
+      frequencyGroup,
+      matchCount
+    );
+  };
+
+  window.highlightMapByHeatmapCells = function(heatmapCells) {
+    selectedStreet = null;
+
+    const selectedCells = new Set(
+      heatmapCells
+        .split(",")
+        .map(d => d.trim())
+        .filter(d => d !== "" && !d.includes("Other"))
+    );
+
+    let matchCount = 0;
+
+    d3.selectAll(".overlay")
+      .classed("selected", false)
+      .attr("stroke", d => {
+        const details = d.properties.schedule_details;
+        const cells = details && details.heatmap_cells
+          ? details.heatmap_cells.split(",").map(cell => cell.trim())
+          : [];
+
+        const match = cells.some(cell => selectedCells.has(cell));
+
+        if (match) {
+          matchCount += 1;
+          return "#000";
+        }
+
+        return color(d.properties.frequency_group);
+      })
+      .attr("stroke-width", d => {
+        const details = d.properties.schedule_details;
+        const cells = details && details.heatmap_cells
+          ? details.heatmap_cells.split(",").map(cell => cell.trim())
+          : [];
+
+        return cells.some(cell => selectedCells.has(cell)) ? 3.5 : 1.2;
+      })
+      .attr("opacity", d => {
+        const details = d.properties.schedule_details;
+        const cells = details && details.heatmap_cells
+          ? details.heatmap_cells.split(",").map(cell => cell.trim())
+          : [];
+
+        return cells.some(cell => selectedCells.has(cell)) ? 1 : 0.12;
+      });
+
+    updatePatternPanel(
+      "Weekday / Time Selection",
+      heatmapCells,
+      matchCount
+    );
+  };
 
 }).catch(error => {
   console.error("Error loading map data:", error);
