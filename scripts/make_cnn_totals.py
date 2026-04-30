@@ -21,14 +21,9 @@ def row_week_count(row):
     """
     Count how often this schedule row happens in a typical month.
 
-    The raw data has Week1-Week5 fields. If all five are marked, that technically
-    means the schedule can happen in a fifth week, but for a simpler user-facing
-    estimate, we treat a normal month as about 4 weeks.
-
-    Examples:
-    - Week1 only = 1 time/month
-    - Week1 + Week3 = 2 times/month
-    - Week1-Week5 = about 4 times/month
+    The raw data has Week1-Week5 fields. For the user-facing estimate,
+    we treat a normal month as roughly 4 weeks, so rows marked for all
+    five possible weeks count as about 4 times/month.
     """
     total = 0
 
@@ -53,55 +48,49 @@ def row_week_count(row):
 
 def frequency_group(freq):
     """
-    Group estimated sweeps per month into enough bins to create a visible
-    gradient on the map.
+    Uneven bins.
 
-    These are still simple enough to explain:
-    1-4 means about once per week or less.
-    17-20 means about every weekday in a typical month.
-    Higher bins capture streets with multiple unique time windows.
+    Most street segments are in the low-frequency range, so the early bins
+    need to be much more detailed. Higher values are less common, so those
+    can use wider bins.
     """
-    if freq <= 4:
-        return "1-4"
+    if freq <= 1:
+        return "1"
+    if freq == 2:
+        return "2"
+    if freq == 3:
+        return "3"
+    if freq == 4:
+        return "4"
+    if freq == 5:
+        return "5"
+    if freq == 6:
+        return "6"
     if freq <= 8:
-        return "5-8"
+        return "7-8"
     if freq <= 12:
         return "9-12"
     if freq <= 16:
         return "13-16"
     if freq <= 20:
         return "17-20"
-    if freq <= 24:
-        return "21-24"
     if freq <= 28:
-        return "25-28"
-    if freq <= 32:
-        return "29-32"
+        return "21-28"
     if freq <= 36:
-        return "33-36"
-    if freq <= 40:
-        return "37-40"
-    if freq <= 44:
-        return "41-44"
-    if freq <= 48:
-        return "45-48"
+        return "29-36"
 
-    return "49+"
+    return "37+"
 
 
 def main():
     # Key idea:
-    # For each CNN, count unique schedule patterns instead of every raw row.
+    # For each CNN, count unique weekday/time schedules rather than every raw row.
     #
-    # The raw data can repeat rows because it separates sides of street and
-    # block-side records. For a user-facing "times per month" metric, we do not
-    # want left/right side duplicates to inflate the number too much.
+    # This avoids inflating the frequency because the raw dataset can split rows
+    # by side of street, block side, or other repeated schedule records.
     #
     # Unique schedule pattern:
     # weekday + fromhour + tohour
-    #
-    # Each unique pattern contributes based on the Week1-Week5 columns, capped
-    # at 4 for a typical month estimate.
     schedules_by_cnn = defaultdict(dict)
 
     with open(RAW_FILE, newline="", encoding="utf-8-sig") as f:
@@ -120,7 +109,7 @@ def main():
             weeks = row_week_count(row)
 
             # If the same CNN/day/time appears more than once, keep the largest
-            # week count instead of adding duplicates.
+            # week count instead of adding duplicate rows.
             previous = schedules_by_cnn[cnn].get(schedule_key, 0)
             schedules_by_cnn[cnn][schedule_key] = max(previous, weeks)
 
