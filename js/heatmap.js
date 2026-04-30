@@ -1,13 +1,13 @@
-const svg2 = d3.select("#heatmap");
-const width2 = +svg2.attr("width");
-const height2 = +svg2.attr("height");
+const heatSvg = d3.select("#heatmap");
+const heatWidth = +heatSvg.attr("width");
+const heatHeight = +heatSvg.attr("height");
 
-const margin2 = { top: 60, right: 30, bottom: 70, left: 90 };
-const innerWidth2 = width2 - margin2.left - margin2.right;
-const innerHeight2 = height2 - margin2.top - margin2.bottom;
+const heatMargin = { top: 60, right: 30, bottom: 70, left: 90 };
+const heatInnerWidth = heatWidth - heatMargin.left - heatMargin.right;
+const heatInnerHeight = heatHeight - heatMargin.top - heatMargin.bottom;
 
-const g2 = svg2.append("g")
-  .attr("transform", `translate(${margin2.left},${margin2.top})`);
+const heatG = heatSvg.append("g")
+  .attr("transform", `translate(${heatMargin.left},${heatMargin.top})`);
 
 d3.csv("data/processed/time_heatmap.csv").then(data => {
   data.forEach(d => {
@@ -19,36 +19,39 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
 
   const x = d3.scaleBand()
     .domain(weekdayOrder)
-    .range([0, innerWidth2])
+    .range([0, heatInnerWidth])
     .padding(0.05);
 
   const y = d3.scaleBand()
     .domain(timeOrder)
-    .range([0, innerHeight2])
+    .range([0, heatInnerHeight])
     .padding(0.05);
 
   const color = d3.scaleSequential()
     .domain([0, d3.max(data, d => d.count)])
     .interpolator(d3.interpolateBlues);
 
-  g2.append("g")
-    .attr("transform", `translate(0,${innerHeight2})`)
+  heatG.append("g")
+    .attr("transform", `translate(0,${heatInnerHeight})`)
     .call(d3.axisBottom(x));
 
-  g2.append("g")
+  heatG.append("g")
     .call(d3.axisLeft(y));
 
-  g2.selectAll("rect")
+  heatG.selectAll("rect")
     .data(data)
     .enter()
     .append("rect")
+    .attr("class", "heatmap-cell")
+    .attr("data-cell", d => `${d.weekday}|${d.time_bucket}`)
     .attr("x", d => x(d.weekday))
     .attr("y", d => y(d.time_bucket))
     .attr("width", x.bandwidth())
     .attr("height", y.bandwidth())
-    .attr("fill", d => color(d.count));
+    .attr("fill", d => color(d.count))
+    .attr("opacity", 0.9);
 
-  g2.selectAll(".cell-label")
+  heatG.selectAll(".cell-label")
     .data(data)
     .enter()
     .append("text")
@@ -58,27 +61,55 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("text-anchor", "middle")
     .text(d => d.count);
 
-  svg2.append("text")
+  heatSvg.append("text")
     .attr("class", "chart-title")
-    .attr("x", width2 / 2)
+    .attr("x", heatWidth / 2)
     .attr("y", 30)
     .attr("text-anchor", "middle")
     .text("Street Sweeping by Weekday and Time");
 
-  svg2.append("text")
+  heatSvg.append("text")
     .attr("class", "axis-label")
-    .attr("x", width2 / 2)
-    .attr("y", height2 - 15)
+    .attr("x", heatWidth / 2)
+    .attr("y", heatHeight - 15)
     .attr("text-anchor", "middle")
     .text("Weekday");
 
-  svg2.append("text")
+  heatSvg.append("text")
     .attr("class", "axis-label")
     .attr("transform", "rotate(-90)")
-    .attr("x", -height2 / 2)
+    .attr("x", -heatHeight / 2)
     .attr("y", 20)
     .attr("text-anchor", "middle")
     .text("Time Bucket");
+
 }).catch(error => {
   console.error("Error loading heatmap data:", error);
 });
+
+window.highlightHeatmapCells = function(heatmapCells) {
+  if (!heatmapCells) {
+    return;
+  }
+
+  const selectedCells = new Set(
+    heatmapCells
+      .split(",")
+      .map(d => d.trim())
+      .filter(d => d !== "" && !d.includes("Other"))
+  );
+
+  d3.selectAll(".heatmap-cell")
+    .attr("opacity", function() {
+      const cell = d3.select(this).attr("data-cell");
+      return selectedCells.has(cell) ? 1 : 0.25;
+    })
+    .attr("stroke", function() {
+      const cell = d3.select(this).attr("data-cell");
+      return selectedCells.has(cell) ? "#000" : "none";
+    })
+    .attr("stroke-width", function() {
+      const cell = d3.select(this).attr("data-cell");
+      return selectedCells.has(cell) ? 3 : 0;
+    });
+};
