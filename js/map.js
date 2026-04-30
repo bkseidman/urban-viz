@@ -67,6 +67,10 @@ function updateLinkedViews(d) {
   if (window.highlightHeatmapCells) {
     window.highlightHeatmapCells(details.heatmap_cells);
   }
+
+  if (window.highlightTopStreetBar) {
+    window.highlightTopStreetBar(details.cnn);
+  }
 }
 
 function updateDetailPanel(d) {
@@ -107,7 +111,7 @@ function updateDetailPanel(d) {
     <p><strong>Swept on holidays:</strong> ${yesNo(details.holidays)}</p>
 
     <p class="hint">
-      The frequency chart and heatmap are highlighting this street's matching patterns.
+      The charts are highlighting this street's matching patterns.
     </p>
   `);
 }
@@ -416,6 +420,38 @@ Promise.all([
     `);
   };
 
+  window.highlightMapByCNN = function(cnn) {
+    const cnnString = String(cnn);
+
+    const matchingStreet = streets
+      .data()
+      .find(d => String(d.properties.cnn) === cnnString);
+
+    if (!matchingStreet) {
+      d3.select("#detail-panel").html(`
+        <h2>Top Street Selection</h2>
+        <p><strong>CNN:</strong> ${cnnString}</p>
+        <p class="hint">This street was found in the schedule data, but not on the map layer.</p>
+      `);
+
+      return;
+    }
+
+    selectedStreet = matchingStreet;
+    activeMapMode = "street";
+    activeFrequencyGroup = null;
+    activeHeatmapCells = new Set();
+
+    applyMapStyles();
+
+    streets
+      .filter(d => String(d.properties.cnn) === cnnString)
+      .raise();
+
+    updateDetailPanel(matchingStreet);
+    updateLinkedViews(matchingStreet);
+  };
+
   window.resetDashboardSelection = function() {
     selectedStreet = null;
     activeMapMode = "none";
@@ -435,6 +471,10 @@ Promise.all([
 
     if (window.resetHeatmapHighlight) {
       window.resetHeatmapHighlight();
+    }
+
+    if (window.resetTopStreetHighlight) {
+      window.resetTopStreetHighlight();
     }
   };
 
