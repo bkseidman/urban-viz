@@ -2,6 +2,18 @@ const svg = d3.select("#map");
 const width = +svg.attr("width");
 const height = +svg.attr("height");
 
+function getStreetName(d) {
+  return (
+    d.properties.street ||
+    d.properties.street_name ||
+    d.properties.STREET ||
+    d.properties.STREETNAME ||
+    d.properties.fullname ||
+    d.properties.name ||
+    "Street segment"
+  );
+}
+
 Promise.all([
   d3.json("data/raw/active_streets.geojson"),
   d3.csv("data/processed/cnn_totals.csv")
@@ -31,10 +43,9 @@ Promise.all([
 
   const path = d3.geoPath().projection(projection);
 
-  // Stronger color ramp (more contrast)
   const order = [
-    "1-10","11-20","21-30","31-40","41-50",
-    "51-60","61-70","71-80","81-90","91-100","101+"
+    "1-10", "11-20", "21-30", "31-40", "41-50",
+    "51-60", "61-70", "71-80", "81-90", "91-100", "101+"
   ];
 
   const color = d3.scaleOrdinal()
@@ -53,7 +64,9 @@ Promise.all([
       "#08306b"
     ]);
 
-  //  Base layer (all streets)
+  const tooltip = d3.select("#map-tooltip");
+
+  // Base layer (all streets)
   svg.selectAll(".base")
     .data(geoData.features)
     .enter()
@@ -76,9 +89,40 @@ Promise.all([
     .attr("stroke", d => color(d.properties.frequency_group))
     .attr("stroke-width", 1.8)
     .attr("stroke-linecap", "round")
-    .attr("opacity", 0.95);
+    .attr("opacity", 0.95)
 
-  // Legend (ordered properly)
+    .on("mouseover", function(event, d) {
+      d3.select(this)
+        .raise()
+        .attr("stroke", "#000")
+        .attr("stroke-width", 4)
+        .attr("opacity", 1);
+
+      tooltip
+        .style("display", "block")
+        .html(`
+          <strong>${getStreetName(d)}</strong><br>
+          Frequency group: ${d.properties.frequency_group}<br>
+          CNN: ${d.properties.cnn || "Unknown"}
+        `);
+    })
+
+    .on("mousemove", function(event) {
+      tooltip
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY + 12}px`);
+    })
+
+    .on("mouseout", function(event, d) {
+      d3.select(this)
+        .attr("stroke", color(d.properties.frequency_group))
+        .attr("stroke-width", 1.8)
+        .attr("opacity", 0.95);
+
+      tooltip.style("display", "none");
+    });
+
+  // Legend
   const legend = svg.append("g")
     .attr("transform", "translate(20,20)");
 
