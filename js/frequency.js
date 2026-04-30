@@ -67,22 +67,14 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .on("click", function(event, d) {
       if (selectedFrequencyGroup === d.frequency) {
         selectedFrequencyGroup = null;
-
-        if (window.resetDashboardSelection) {
-          window.resetDashboardSelection();
-        }
-
-        return;
+      } else {
+        selectedFrequencyGroup = d.frequency;
       }
 
-      selectedFrequencyGroup = d.frequency;
+      updateFrequencySelection();
 
-      if (window.highlightFrequencyGroup) {
-        window.highlightFrequencyGroup(d.frequency);
-      }
-
-      if (window.highlightMapByFrequencyGroup) {
-        window.highlightMapByFrequencyGroup(d.frequency);
+      if (window.setFrequencySelection) {
+        window.setFrequencySelection(selectedFrequencyGroup);
       }
     });
 
@@ -122,20 +114,25 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   console.error("Error loading frequency data:", error);
 });
 
+function updateFrequencySelection() {
+  d3.selectAll(".freq-bar")
+    .attr("opacity", d => {
+      if (!selectedFrequencyGroup) {
+        return 0.85;
+      }
+
+      return d.frequency === selectedFrequencyGroup ? 1 : 0.25;
+    })
+    .attr("stroke", d => d.frequency === selectedFrequencyGroup ? "#000" : "none")
+    .attr("stroke-width", d => d.frequency === selectedFrequencyGroup ? 3 : 0);
+}
+
 window.highlightFrequencyGroup = function(frequencyGroup) {
   selectedFrequencyGroup = frequencyGroup;
-
-  d3.selectAll(".freq-bar")
-    .attr("opacity", d => d.frequency === frequencyGroup ? 1 : 0.25)
-    .attr("stroke", d => d.frequency === frequencyGroup ? "#000" : "none")
-    .attr("stroke-width", d => d.frequency === frequencyGroup ? 3 : 0);
+  updateFrequencySelection();
 };
 
 window.resetFrequencyHighlight = function() {
   selectedFrequencyGroup = null;
-
-  d3.selectAll(".freq-bar")
-    .attr("opacity", 0.85)
-    .attr("stroke", "none")
-    .attr("stroke-width", 0);
+  updateFrequencySelection();
 };
