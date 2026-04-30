@@ -400,6 +400,14 @@ Promise.all([
     activeHeatmapCells = new Set();
     activeCorridor = null;
 
+    if (window.resetHeatmapHighlight) {
+      window.resetHeatmapHighlight();
+    }
+
+    if (window.resetTopStreetHighlight) {
+      window.resetTopStreetHighlight();
+    }
+
     const matchCount = streets
       .data()
       .filter(d => d.properties.frequency_group === frequencyGroup)
@@ -420,6 +428,14 @@ Promise.all([
     activeFrequencyGroup = null;
     activeCorridor = null;
 
+    if (window.resetFrequencyHighlight) {
+      window.resetFrequencyHighlight();
+    }
+
+    if (window.resetTopStreetHighlight) {
+      window.resetTopStreetHighlight();
+    }
+
     activeHeatmapCells = new Set(
       heatmapCells
         .split(",")
@@ -436,12 +452,12 @@ Promise.all([
 
     d3.select("#detail-panel").html(`
       <h2>Weekday / Time Selection</h2>
-      <p><strong>Selected pattern:</strong> ${heatmapCells}</p>
+      <p><strong>Selected cells:</strong> ${heatmapCells}</p>
       <p><strong>Matching street segments highlighted:</strong> ${matchCount}</p>
-      <p><strong>Heatmap cell value:</strong> ${heatmapValue} estimated monthly scheduled occurrences</p>
+      <p><strong>Combined heatmap value:</strong> ${heatmapValue} estimated monthly scheduled occurrences</p>
       <p class="hint">
         The heatmap value counts scheduled monthly sweeping occurrences.
-        The map highlight counts unique street segments, so these numbers can be different.
+        The map highlight counts unique street segments matching at least one selected cell.
       </p>
     `);
   };
@@ -452,6 +468,14 @@ Promise.all([
     activeFrequencyGroup = null;
     activeHeatmapCells = new Set();
     activeCorridor = corridor;
+
+    if (window.resetFrequencyHighlight) {
+      window.resetFrequencyHighlight();
+    }
+
+    if (window.resetHeatmapHighlight) {
+      window.resetHeatmapHighlight();
+    }
 
     const matchingSegments = streets
       .data()
