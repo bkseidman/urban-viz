@@ -58,7 +58,17 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("width", x.bandwidth())
     .attr("height", d => freqInnerHeight - y(d.count))
     .attr("fill", "steelblue")
-    .attr("opacity", 0.85);
+    .attr("opacity", 0.85)
+    .style("cursor", "pointer")
+    .on("click", function(event, d) {
+      if (window.highlightFrequencyGroup) {
+        window.highlightFrequencyGroup(d.frequency);
+      }
+
+      if (window.highlightMapByFrequencyGroup) {
+        window.highlightMapByFrequencyGroup(d.frequency);
+      }
+    });
 
   freqG.selectAll(".bar-label")
     .data(data)
