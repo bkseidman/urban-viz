@@ -9,9 +9,44 @@ const heatInnerHeight = heatHeight - heatMargin.top - heatMargin.bottom;
 const heatG = heatSvg.append("g")
   .attr("transform", `translate(${heatMargin.left},${heatMargin.top})`);
 
+let selectedHeatmapCells = new Set();
+let heatmapValueByCell = new Map();
+
+function updateHeatmapSelection() {
+  d3.selectAll(".heatmap-cell")
+    .attr("opacity", function() {
+      const cell = d3.select(this).attr("data-cell");
+
+      if (selectedHeatmapCells.size === 0) {
+        return 0.9;
+      }
+
+      return selectedHeatmapCells.has(cell) ? 1 : 0.25;
+    })
+    .attr("stroke", function() {
+      const cell = d3.select(this).attr("data-cell");
+      return selectedHeatmapCells.has(cell) ? "#000" : "none";
+    })
+    .attr("stroke-width", function() {
+      const cell = d3.select(this).attr("data-cell");
+      return selectedHeatmapCells.has(cell) ? 3 : 0;
+    });
+}
+
+function selectedHeatmapValueTotal() {
+  let total = 0;
+
+  selectedHeatmapCells.forEach(cell => {
+    total += heatmapValueByCell.get(cell) || 0;
+  });
+
+  return total;
+}
+
 d3.csv("data/processed/time_heatmap.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
+    heatmapValueByCell.set(`${d.weekday}|${d.time_bucket}`, d.count);
   });
 
   const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -54,12 +89,26 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .on("click", function(event, d) {
       const selectedCell = `${d.weekday}|${d.time_bucket}`;
 
-      if (window.highlightHeatmapCells) {
-        window.highlightHeatmapCells(selectedCell);
+      if (selectedHeatmapCells.has(selectedCell)) {
+        selectedHeatmapCells.delete(selectedCell);
+      } else {
+        selectedHeatmapCells.add(selectedCell);
       }
 
+      updateHeatmapSelection();
+
+      if (selectedHeatmapCells.size === 0) {
+        if (window.resetDashboardSelection) {
+          window.resetDashboardSelection();
+        }
+        return;
+      }
+
+      const selectedCellList = Array.from(selectedHeatmapCells).join(", ");
+      const selectedTotal = selectedHeatmapValueTotal();
+
       if (window.highlightMapByHeatmapCells) {
-        window.highlightMapByHeatmapCells(selectedCell, d.count);
+        window.highlightMapByHeatmapCells(selectedCellList, selectedTotal);
       }
     });
 
@@ -104,29 +153,19 @@ window.highlightHeatmapCells = function(heatmapCells) {
     return;
   }
 
-  const selectedCells = new Set(
+  selectedHeatmapCells = new Set(
     heatmapCells
       .split(",")
       .map(d => d.trim())
       .filter(d => d !== "" && !d.includes("Other"))
   );
 
-  d3.selectAll(".heatmap-cell")
-    .attr("opacity", function() {
-      const cell = d3.select(this).attr("data-cell");
-      return selectedCells.has(cell) ? 1 : 0.25;
-    })
-    .attr("stroke", function() {
-      const cell = d3.select(this).attr("data-cell");
-      return selectedCells.has(cell) ? "#000" : "none";
-    })
-    .attr("stroke-width", function() {
-      const cell = d3.select(this).attr("data-cell");
-      return selectedCells.has(cell) ? 3 : 0;
-    });
+  updateHeatmapSelection();
 };
 
 window.resetHeatmapHighlight = function() {
+  selectedHeatmapCells = new Set();
+
   d3.selectAll(".heatmap-cell")
     .attr("opacity", 0.9)
     .attr("stroke", "none")
