@@ -82,9 +82,24 @@ Promise.all([
 
   const tooltip = d3.select("#map-tooltip");
 
-  // Main group so the base layer, overlay layer, and legend are organized together.
+  // Everything inside this group will zoom and pan together.
   const mapGroup = svg.append("g")
     .attr("class", "map-group");
+
+  // Add zoom behavior.
+  const zoom = d3.zoom()
+    .scaleExtent([1, 12])
+    .translateExtent([
+      [-width, -height],
+      [width * 2, height * 2]
+    ])
+    .on("zoom", function(event) {
+      mapGroup.attr("transform", event.transform);
+    });
+
+  svg.call(zoom);
+
+  svg.on("dblclick.zoom", null);
 
   // Base layer (all streets)
   mapGroup.selectAll(".base")
@@ -163,7 +178,6 @@ Promise.all([
       updateDetailPanel(d);
     });
 
-  // Legend
   const legend = svg.append("g")
     .attr("class", "legend")
     .attr("transform", "translate(20,20)");
