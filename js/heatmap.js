@@ -15,7 +15,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
   });
 
   const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const timeOrder = ["6-8", "8-10", "10-12", "12-14"];
+  const timeOrder = ["12-2", "2-4", "4-6", "6-8", "8-10", "10-12", "12-14"];
 
   const x = d3.scaleBand()
     .domain(weekdayOrder)
