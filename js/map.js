@@ -32,6 +32,22 @@ function valueOrUnknown(value) {
   return value;
 }
 
+function updateLinkedViews(d) {
+  const details = d.properties.schedule_details;
+
+  if (!details) {
+    return;
+  }
+
+  if (window.highlightFrequencyGroup) {
+    window.highlightFrequencyGroup(details.frequency_group);
+  }
+
+  if (window.highlightHeatmapCells) {
+    window.highlightHeatmapCells(details.heatmap_cells);
+  }
+}
+
 function updateDetailPanel(d) {
   const props = d.properties;
   const details = props.schedule_details;
@@ -68,6 +84,10 @@ function updateDetailPanel(d) {
     <p><strong>Block side:</strong> ${valueOrUnknown(details.block_sides)}</p>
     <p><strong>Side swept:</strong> ${valueOrUnknown(details.street_sides)}</p>
     <p><strong>Swept on holidays:</strong> ${yesNo(details.holidays)}</p>
+
+    <p class="hint">
+      The frequency chart and heatmap are now highlighting the selected street's matching patterns.
+    </p>
   `);
 }
 
@@ -227,6 +247,7 @@ Promise.all([
         .attr("opacity", 1);
 
       updateDetailPanel(d);
+      updateLinkedViews(d);
     });
 
   const legend = svg.append("g")
