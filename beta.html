@@ -161,6 +161,10 @@
         pointer-events: none;
       }
 
+      .top-street-label {
+        font-size: 10px;
+      }
+
       .nav-link {
         margin-top: 28px;
       }
@@ -211,7 +215,7 @@
       <section class="map-column">
         <h2>Interactive Street Sweeping Map</h2>
         <p class="subtitle">
-          Streets are colored by grouped monthly sweeping frequency. Hover for a quick preview,
+          Streets are colored by estimated sweeps per month. Hover for a quick preview,
           click for full schedule details, and zoom or pan to inspect smaller areas.
         </p>
 
@@ -230,9 +234,18 @@
         <div class="chart-card">
           <h2>Frequency Distribution</h2>
           <p>
-            Click a bar to highlight streets in that monthly frequency group.
+            Click a bar to highlight streets in that estimated sweeps-per-month range.
           </p>
           <svg id="chart" width="500" height="360"></svg>
+        </div>
+
+        <div class="chart-card">
+          <h2>Most Frequently Swept Streets</h2>
+          <p>
+            This chart shows the street segments with the highest estimated sweeps per month.
+            Click a bar to highlight that street on the map.
+          </p>
+          <svg id="top-streets" width="500" height="360"></svg>
         </div>
       </section>
 
@@ -255,5 +268,6 @@
     <script src="js/map.js"></script>
     <script src="js/heatmap.js"></script>
     <script src="js/frequency.js"></script>
+    <script src="js/top_streets.js"></script>
   </body>
 </html>
