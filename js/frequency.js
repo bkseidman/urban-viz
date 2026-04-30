@@ -112,3 +112,10 @@ window.highlightFrequencyGroup = function(frequencyGroup) {
     .attr("stroke", d => d.frequency === frequencyGroup ? "#000" : "none")
     .attr("stroke-width", d => d.frequency === frequencyGroup ? 3 : 0);
 };
+
+window.resetFrequencyHighlight = function() {
+  d3.selectAll(".freq-bar")
+    .attr("opacity", 0.85)
+    .attr("stroke", "none")
+    .attr("stroke-width", 0);
+};
