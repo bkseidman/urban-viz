@@ -125,3 +125,10 @@ window.highlightHeatmapCells = function(heatmapCells) {
       return selectedCells.has(cell) ? 3 : 0;
     });
 };
+
+window.resetHeatmapHighlight = function() {
+  d3.selectAll(".heatmap-cell")
+    .attr("opacity", 0.9)
+    .attr("stroke", "none")
+    .attr("stroke-width", 0);
+};
