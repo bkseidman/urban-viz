@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Street Cleaning in San Francisco: Beta Dashboard</title>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        line-height: 1.4;
+        background: #fafafa;
+        color: #222;
+      }
+
+      h1 {
+        margin-bottom: 6px;
+      }
+
+      h2 {
+        margin-top: 0;
+      }
+
+      .subtitle {
+        color: #444;
+        max-width: 950px;
+        margin-bottom: 24px;
+      }
+
+      .section {
+        margin-bottom: 42px;
+      }
+
+      .dashboard-layout {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+      }
+
+      .map-column {
+        flex: 1;
+      }
+
+      .side-column {
+        width: 320px;
+      }
+
+      svg {
+        background: white;
+        border: 1px solid #ddd;
+      }
+
+      #map {
+        display: block;
+        background: #f8f8f8;
+      }
+
+      #detail-panel {
+        width: 100%;
+        min-height: 260px;
+        padding: 18px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+      }
+
+      #detail-panel h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      #detail-panel p {
+        margin: 8px 0;
+      }
+
+      #detail-panel .hint {
+        color: #555;
+      }
+
+      #map-tooltip {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 260px;
+        z-index: 10;
+      }
+
+      .overlay {
+        cursor: pointer;
+      }
+
+      .overlay.selected {
+        stroke: #000;
+        stroke-width: 4px;
+        opacity: 1;
+      }
+
+      .legend text {
+        font-size: 12px;
+      }
+
+      .chart-row {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .chart-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .chart-card p {
+        max-width: 720px;
+        color: #444;
+        margin-top: 4px;
+      }
+
+      .chart-title {
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .axis-label {
+        font-size: 13px;
+      }
+
+      .bar-label {
+        font-size: 11px;
+      }
+
+      .cell-label {
+        font-size: 11px;
+        pointer-events: none;
+      }
+
+      .nav-link {
+        margin-top: 28px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Street Cleaning in San Francisco: Patterns and Frequency</h1>
+
+    <p class="subtitle">
+      This beta dashboard explores how street sweeping is distributed across San Francisco.
+      The map is the main view: users can zoom, hover, and click on street segments to inspect
+      individual sweeping schedules. The heatmap and frequency chart provide citywide context.
+    </p>
+
+    <section class="section">
+      <div class="dashboard-layout">
+        <div class="map-column">
+          <h2>Interactive Street Sweeping Map</h2>
+          <p class="subtitle">
+            Streets are colored by grouped monthly sweeping frequency. Hover for a quick preview,
+            click for full schedule details, and zoom or pan to inspect smaller areas.
+          </p>
+
+          <svg id="map" width="1000" height="800"></svg>
+        </div>
+
+        <div class="side-column">
+          <div id="detail-panel">
+            <h2>Selected Street</h2>
+            <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section chart-row">
+      <div class="chart-card">
+        <h2>Weekday and Time Pattern</h2>
+        <p>
+          This heatmap shows when street sweeping happens most often across the full dataset.
+        </p>
+        <svg id="heatmap" width="720" height="450"></svg>
+      </div>
+
+      <div class="chart-card">
+        <h2>Frequency Distribution</h2>
+        <p>
+          This chart shows how many street segments fall into each monthly sweeping frequency group.
+        </p>
+        <svg id="chart" width="720" height="450"></svg>
+      </div>
+    </section>
+
+    <div id="map-tooltip"></div>
+
+    <p class="nav-link"><a href="index.html">Back to index</a></p>
+
+    <script src="js/map.js"></script>
+    <script src="js/heatmap.js"></script>
+    <script src="js/frequency.js"></script>
+  </body>
+</html>
