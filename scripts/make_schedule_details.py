@@ -27,6 +27,12 @@ def format_time_range(from_hour, to_hour):
 def get_time_bucket(from_hour):
     hour = int(float(from_hour))
 
+    if 0 <= hour < 2:
+        return "12-2"
+    if 2 <= hour < 4:
+        return "2-4"
+    if 4 <= hour < 6:
+        return "4-6"
     if 6 <= hour < 8:
         return "6-8"
     if 8 <= hour < 10:
@@ -37,7 +43,6 @@ def get_time_bucket(from_hour):
         return "12-14"
 
     return "Other"
-
 
 def clean_join(values):
     cleaned = sorted(v for v in values if v and str(v).strip())
