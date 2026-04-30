@@ -59,7 +59,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
       }
 
       if (window.highlightMapByHeatmapCells) {
-        window.highlightMapByHeatmapCells(selectedCell);
+        window.highlightMapByHeatmapCells(selectedCell, d.count);
       }
     });
 
@@ -78,7 +78,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("x", heatWidth / 2)
     .attr("y", 30)
     .attr("text-anchor", "middle")
-    .text("Street Sweeping by Weekday and Time");
+    .text("Scheduled Sweeping Occurrences by Weekday and Time");
 
   heatSvg.append("text")
     .attr("class", "axis-label")
