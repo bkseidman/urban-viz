@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Street Sweeping Map</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -30,6 +31,25 @@
       .legend text {
         font-size: 12px;
       }
+
+      .overlay {
+        cursor: pointer;
+      }
+
+      #map-tooltip {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 240px;
+        z-index: 10;
+      }
     </style>
   </head>
 
@@ -37,9 +57,12 @@
     <h1>Street Sweeping Frequency Map</h1>
     <p class="note">
       Street segments are colored by grouped monthly sweeping frequency.
+      Hover over a colored street segment to see more information.
     </p>
 
     <svg id="map" width="1000" height="800"></svg>
+
+    <div id="map-tooltip"></div>
 
     <p><a href="index.html">Back to index</a></p>
 
