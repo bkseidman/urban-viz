@@ -57,7 +57,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("y", d => y(d.count))
     .attr("width", x.bandwidth())
     .attr("height", d => freqInnerHeight - y(d.count))
-    .attr("fill", "steelblue");
+    .attr("fill", "steelblue")
+    .attr("opacity", 0.85);
 
   freqG.selectAll(".bar-label")
     .data(data)
@@ -90,6 +91,14 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("y", 20)
     .attr("text-anchor", "middle")
     .text("Number of Street Segments");
+
 }).catch(error => {
   console.error("Error loading frequency data:", error);
 });
+
+window.highlightFrequencyGroup = function(frequencyGroup) {
+  d3.selectAll(".freq-bar")
+    .attr("opacity", d => d.frequency === frequencyGroup ? 1 : 0.25)
+    .attr("stroke", d => d.frequency === frequencyGroup ? "#000" : "none")
+    .attr("stroke-width", d => d.frequency === frequencyGroup ? 3 : 0);
+};
