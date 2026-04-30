@@ -6,6 +6,7 @@ let selectedStreet = null;
 let activeMapMode = "none";
 let activeFrequencyGroup = null;
 let activeHeatmapCells = new Set();
+let activeCorridor = null;
 
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
@@ -53,6 +54,16 @@ function streetMatchesActiveHeatmap(d) {
   return cells.some(cell => activeHeatmapCells.has(cell));
 }
 
+function streetMatchesActiveCorridor(d) {
+  const details = d.properties.schedule_details;
+
+  if (!details || !details.corridor) {
+    return false;
+  }
+
+  return details.corridor === activeCorridor;
+}
+
 function updateLinkedViews(d) {
   const details = d.properties.schedule_details;
 
@@ -69,7 +80,7 @@ function updateLinkedViews(d) {
   }
 
   if (window.highlightTopStreetBar) {
-    window.highlightTopStreetBar(details.cnn);
+    window.highlightTopStreetBar(details.corridor);
   }
 }
 
@@ -267,6 +278,7 @@ Promise.all([
       activeMapMode = "street";
       activeFrequencyGroup = null;
       activeHeatmapCells = new Set();
+      activeCorridor = null;
 
       applyMapStyles();
 
@@ -315,6 +327,10 @@ Promise.all([
           return "#000";
         }
 
+        if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
+          return "#000";
+        }
+
         return color(d.properties.frequency_group);
       })
       .attr("stroke-width", d => {
@@ -327,6 +343,10 @@ Promise.all([
         }
 
         if (activeMapMode === "heatmap" && streetMatchesActiveHeatmap(d)) {
+          return 3.5;
+        }
+
+        if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
           return 3.5;
         }
 
@@ -353,6 +373,10 @@ Promise.all([
           return streetMatchesActiveHeatmap(d) ? 1 : 0.12;
         }
 
+        if (activeMapMode === "corridor") {
+          return streetMatchesActiveCorridor(d) ? 1 : 0.12;
+        }
+
         return 0.95;
       });
   }
@@ -374,6 +398,7 @@ Promise.all([
     activeMapMode = "frequency";
     activeFrequencyGroup = frequencyGroup;
     activeHeatmapCells = new Set();
+    activeCorridor = null;
 
     const matchCount = streets
       .data()
@@ -393,6 +418,7 @@ Promise.all([
     selectedStreet = null;
     activeMapMode = "heatmap";
     activeFrequencyGroup = null;
+    activeCorridor = null;
 
     activeHeatmapCells = new Set(
       heatmapCells
@@ -420,36 +446,49 @@ Promise.all([
     `);
   };
 
-  window.highlightMapByCNN = function(cnn) {
-    const cnnString = String(cnn);
-
-    const matchingStreet = streets
-      .data()
-      .find(d => String(d.properties.cnn) === cnnString);
-
-    if (!matchingStreet) {
-      d3.select("#detail-panel").html(`
-        <h2>Top Street Selection</h2>
-        <p><strong>CNN:</strong> ${cnnString}</p>
-        <p class="hint">This street was found in the schedule data, but not on the map layer.</p>
-      `);
-
-      return;
-    }
-
-    selectedStreet = matchingStreet;
-    activeMapMode = "street";
+  window.highlightMapByCorridor = function(corridor, summary) {
+    selectedStreet = null;
+    activeMapMode = "corridor";
     activeFrequencyGroup = null;
     activeHeatmapCells = new Set();
+    activeCorridor = corridor;
+
+    const matchingSegments = streets
+      .data()
+      .filter(d => {
+        const details = d.properties.schedule_details;
+        return details && details.corridor === corridor;
+      });
+
+    const segmentCount = matchingSegments.length;
+    const totalFrequency = summary && summary.total_frequency
+      ? summary.total_frequency
+      : d3.sum(matchingSegments, d => +d.properties.schedule_details.monthly_frequency || 0);
+
+    const averageFrequency = segmentCount > 0
+      ? (totalFrequency / segmentCount).toFixed(1)
+      : "Unknown";
 
     applyMapStyles();
 
     streets
-      .filter(d => String(d.properties.cnn) === cnnString)
+      .filter(d => {
+        const details = d.properties.schedule_details;
+        return details && details.corridor === corridor;
+      })
       .raise();
 
-    updateDetailPanel(matchingStreet);
-    updateLinkedViews(matchingStreet);
+    d3.select("#detail-panel").html(`
+      <h2>Full Street Selection</h2>
+      <p><strong>Street:</strong> ${corridor}</p>
+      <p><strong>Total estimated sweeps per month:</strong> ${totalFrequency}</p>
+      <p><strong>Street segments highlighted:</strong> ${segmentCount}</p>
+      <p><strong>Average per segment:</strong> ${averageFrequency}</p>
+      <p class="hint">
+        This selection groups all mapped street segments with the same street name.
+        Click an individual street segment to return to segment-level details.
+      </p>
+    `);
   };
 
   window.resetDashboardSelection = function() {
@@ -457,6 +496,7 @@ Promise.all([
     activeMapMode = "none";
     activeFrequencyGroup = null;
     activeHeatmapCells = new Set();
+    activeCorridor = null;
 
     applyMapStyles();
 
