@@ -83,6 +83,21 @@
         color: #555;
       }
 
+      #reset-selection {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      #reset-selection:hover {
+        background: #f1f1f1;
+      }
+
       #map-tooltip {
         position: absolute;
         display: none;
@@ -183,6 +198,10 @@
             <h2>Selected Street</h2>
             <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
           </div>
+
+          <button id="reset-selection" type="button">
+            Reset selection
+          </button>
         </div>
       </div>
     </section>
