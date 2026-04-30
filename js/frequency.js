@@ -15,19 +15,19 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   });
 
   const order = [
-    "1-4",
-    "5-8",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7-8",
     "9-12",
     "13-16",
     "17-20",
-    "21-24",
-    "25-28",
-    "29-32",
-    "33-36",
-    "37-40",
-    "41-44",
-    "45-48",
-    "49+"
+    "21-28",
+    "29-36",
+    "37+"
   ];
 
   data.sort((a, b) => order.indexOf(a.frequency) - order.indexOf(b.frequency));
