@@ -5,6 +5,10 @@ const height = +svg.attr("height");
 let selectedStreet = null;
 
 function getStreetName(d) {
+  if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
+    return d.properties.schedule_details.corridor;
+  }
+
   return (
     d.properties.street ||
     d.properties.street_name ||
@@ -16,26 +20,65 @@ function getStreetName(d) {
   );
 }
 
+function yesNo(value) {
+  return value === "1" ? "Yes" : "No";
+}
+
+function valueOrUnknown(value) {
+  if (value === undefined || value === null || value === "") {
+    return "Unknown";
+  }
+
+  return value;
+}
+
 function updateDetailPanel(d) {
   const props = d.properties;
+  const details = props.schedule_details;
+
+  if (!details) {
+    d3.select("#detail-panel").html(`
+      <h2>Selected Street</h2>
+      <p><strong>Street:</strong> ${getStreetName(d)}</p>
+      <p><strong>CNN:</strong> ${valueOrUnknown(props.cnn)}</p>
+      <p><strong>Frequency group:</strong> ${valueOrUnknown(props.frequency_group)}</p>
+      <p class="hint">No detailed schedule information was found for this street segment.</p>
+    `);
+
+    return;
+  }
 
   d3.select("#detail-panel").html(`
     <h2>Selected Street</h2>
-    <p><strong>Street:</strong> ${getStreetName(d)}</p>
-    <p><strong>Frequency group:</strong> ${props.frequency_group || "Unknown"}</p>
-    <p><strong>CNN:</strong> ${props.cnn || "Unknown"}</p>
-    <p class="hint">
-      This panel will later include weekday and time information once the schedule data is joined into the map.
-    </p>
+
+    <p><strong>Street:</strong> ${valueOrUnknown(details.corridor)}</p>
+    <p><strong>Limits:</strong> ${valueOrUnknown(details.limits)}</p>
+    <p><strong>CNN:</strong> ${valueOrUnknown(details.cnn)}</p>
+
+    <hr>
+
+    <p><strong>Monthly frequency:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
+    <p><strong>Frequency group:</strong> ${valueOrUnknown(details.frequency_group)}</p>
+    <p><strong>Days cleaned:</strong> ${valueOrUnknown(details.days_cleaned)}</p>
+    <p><strong>Time ranges:</strong> ${valueOrUnknown(details.time_ranges)}</p>
+
+    <hr>
+
+    <p><strong>Schedule:</strong><br>${valueOrUnknown(details.schedule_summary)}</p>
+    <p><strong>Block side:</strong> ${valueOrUnknown(details.block_sides)}</p>
+    <p><strong>Side swept:</strong> ${valueOrUnknown(details.street_sides)}</p>
+    <p><strong>Swept on holidays:</strong> ${yesNo(details.holidays)}</p>
   `);
 }
 
 Promise.all([
   d3.json("data/raw/active_streets.geojson"),
-  d3.csv("data/processed/cnn_totals.csv")
-]).then(([geoData, freqData]) => {
+  d3.csv("data/processed/cnn_totals.csv"),
+  d3.csv("data/processed/cnn_schedule_details.csv")
+]).then(([geoData, freqData, scheduleDetails]) => {
 
   const freqMap = new Map();
+  const detailsMap = new Map();
 
   freqData.forEach(d => {
     freqMap.set(String(d.cnn), {
@@ -43,14 +86,23 @@ Promise.all([
     });
   });
 
+  scheduleDetails.forEach(d => {
+    detailsMap.set(String(d.cnn), d);
+  });
+
   geoData.features.forEach(feature => {
     const cnn = String(feature.properties.cnn);
-    const match = freqMap.get(cnn);
+    const freqMatch = freqMap.get(cnn);
+    const detailMatch = detailsMap.get(cnn);
 
-    if (match) {
-      feature.properties.frequency_group = match.frequency_group;
+    if (freqMatch) {
+      feature.properties.frequency_group = freqMatch.frequency_group;
     } else {
       feature.properties.frequency_group = "No data";
+    }
+
+    if (detailMatch) {
+      feature.properties.schedule_details = detailMatch;
     }
   });
 
@@ -82,11 +134,9 @@ Promise.all([
 
   const tooltip = d3.select("#map-tooltip");
 
-  // Everything inside this group will zoom and pan together.
   const mapGroup = svg.append("g")
     .attr("class", "map-group");
 
-  // Add zoom behavior.
   const zoom = d3.zoom()
     .scaleExtent([1, 12])
     .translateExtent([
@@ -98,10 +148,8 @@ Promise.all([
     });
 
   svg.call(zoom);
-
   svg.on("dblclick.zoom", null);
 
-  // Base layer (all streets)
   mapGroup.selectAll(".base")
     .data(geoData.features)
     .enter()
@@ -113,7 +161,6 @@ Promise.all([
     .attr("stroke-width", 0.8)
     .attr("opacity", 0.7);
 
-  // Overlay layer (only streets with data)
   mapGroup.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
     .enter()
@@ -133,12 +180,16 @@ Promise.all([
         .attr("stroke-width", 4)
         .attr("opacity", 1);
 
+      const details = d.properties.schedule_details;
+
       tooltip
         .style("display", "block")
         .html(`
           <strong>${getStreetName(d)}</strong><br>
-          Frequency group: ${d.properties.frequency_group}<br>
-          CNN: ${d.properties.cnn || "Unknown"}
+          ${details && details.limits ? `${details.limits}<br>` : ""}
+          Frequency: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
+          Days: ${details ? details.days_cleaned : "Unknown"}<br>
+          Time: ${details ? details.time_ranges : "Unknown"}
         `);
     })
 
