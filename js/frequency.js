@@ -15,17 +15,19 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   });
 
   const order = [
-    "1-10",
-    "11-20",
-    "21-30",
-    "31-40",
-    "41-50",
-    "51-60",
-    "61-70",
-    "71-80",
-    "81-90",
-    "91-100",
-    "101+"
+    "1-4",
+    "5-8",
+    "9-12",
+    "13-16",
+    "17-20",
+    "21-24",
+    "25-28",
+    "29-32",
+    "33-36",
+    "37-40",
+    "41-44",
+    "45-48",
+    "49+"
   ];
 
   data.sort((a, b) => order.indexOf(a.frequency) - order.indexOf(b.frequency));
@@ -85,14 +87,14 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("x", freqWidth / 2)
     .attr("y", 30)
     .attr("text-anchor", "middle")
-    .text("Street Segment Sweeping Frequency");
+    .text("Street Segments by Estimated Sweeps per Month");
 
   freqSvg.append("text")
     .attr("class", "axis-label")
     .attr("x", freqWidth / 2)
     .attr("y", freqHeight - 20)
     .attr("text-anchor", "middle")
-    .text("Monthly Frequency Group");
+    .text("Estimated Sweeps per Month");
 
   freqSvg.append("text")
     .attr("class", "axis-label")
