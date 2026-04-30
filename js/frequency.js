@@ -9,6 +9,8 @@ const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 const freqG = freqSvg.append("g")
   .attr("transform", `translate(${freqMargin.left},${freqMargin.top})`);
 
+let selectedFrequencyGroup = null;
+
 d3.csv("data/processed/frequency_distribution.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
@@ -63,6 +65,18 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("opacity", 0.85)
     .style("cursor", "pointer")
     .on("click", function(event, d) {
+      if (selectedFrequencyGroup === d.frequency) {
+        selectedFrequencyGroup = null;
+
+        if (window.resetDashboardSelection) {
+          window.resetDashboardSelection();
+        }
+
+        return;
+      }
+
+      selectedFrequencyGroup = d.frequency;
+
       if (window.highlightFrequencyGroup) {
         window.highlightFrequencyGroup(d.frequency);
       }
@@ -109,6 +123,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 });
 
 window.highlightFrequencyGroup = function(frequencyGroup) {
+  selectedFrequencyGroup = frequencyGroup;
+
   d3.selectAll(".freq-bar")
     .attr("opacity", d => d.frequency === frequencyGroup ? 1 : 0.25)
     .attr("stroke", d => d.frequency === frequencyGroup ? "#000" : "none")
@@ -116,6 +132,8 @@ window.highlightFrequencyGroup = function(frequencyGroup) {
 };
 
 window.resetFrequencyHighlight = function() {
+  selectedFrequencyGroup = null;
+
   d3.selectAll(".freq-bar")
     .attr("opacity", 0.85)
     .attr("stroke", "none")
