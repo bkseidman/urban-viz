@@ -3,6 +3,9 @@ const width = +svg.attr("width");
 const height = +svg.attr("height");
 
 let selectedStreet = null;
+let activeMapMode = "none";
+let activeFrequencyGroup = null;
+let activeHeatmapCells = new Set();
 
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
@@ -30,6 +33,24 @@ function valueOrUnknown(value) {
   }
 
   return value;
+}
+
+function getStreetCells(d) {
+  const details = d.properties.schedule_details;
+
+  if (!details || !details.heatmap_cells) {
+    return [];
+  }
+
+  return details.heatmap_cells
+    .split(",")
+    .map(cell => cell.trim())
+    .filter(cell => cell !== "" && !cell.includes("Other"));
+}
+
+function streetMatchesActiveHeatmap(d) {
+  const cells = getStreetCells(d);
+  return cells.some(cell => activeHeatmapCells.has(cell));
 }
 
 function updateLinkedViews(d) {
@@ -181,7 +202,7 @@ Promise.all([
     .attr("stroke-width", 0.8)
     .attr("opacity", 0.7);
 
-  mapGroup.selectAll(".overlay")
+  const streets = mapGroup.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
     .enter()
     .append("path")
@@ -219,32 +240,20 @@ Promise.all([
         .style("top", `${event.pageY + 12}px`);
     })
 
-    .on("mouseout", function(event, d) {
-      if (selectedStreet !== d) {
-        d3.select(this)
-          .attr("stroke", color(d.properties.frequency_group))
-          .attr("stroke-width", 1.8)
-          .attr("opacity", 0.95);
-      }
-
+    .on("mouseout", function() {
+      applyMapStyles();
       tooltip.style("display", "none");
     })
 
     .on("click", function(event, d) {
       selectedStreet = d;
+      activeMapMode = "street";
+      activeFrequencyGroup = null;
+      activeHeatmapCells = new Set();
 
-      d3.selectAll(".overlay")
-        .classed("selected", false)
-        .attr("stroke", street => color(street.properties.frequency_group))
-        .attr("stroke-width", 1.8)
-        .attr("opacity", 0.95);
+      applyMapStyles();
 
-      d3.select(this)
-        .raise()
-        .classed("selected", true)
-        .attr("stroke", "#000")
-        .attr("stroke-width", 4)
-        .attr("opacity", 1);
+      d3.select(this).raise();
 
       updateDetailPanel(d);
       updateLinkedViews(d);
@@ -273,6 +282,64 @@ Promise.all([
     .text(d => d)
     .style("font-size", "12px");
 
+  function applyMapStyles() {
+    streets
+      .classed("selected", d => activeMapMode === "street" && selectedStreet === d)
+      .attr("stroke", d => {
+        if (activeMapMode === "street" && selectedStreet === d) {
+          return "#000";
+        }
+
+        if (activeMapMode === "frequency" && d.properties.frequency_group === activeFrequencyGroup) {
+          return "#000";
+        }
+
+        if (activeMapMode === "heatmap" && streetMatchesActiveHeatmap(d)) {
+          return "#000";
+        }
+
+        return color(d.properties.frequency_group);
+      })
+      .attr("stroke-width", d => {
+        if (activeMapMode === "street" && selectedStreet === d) {
+          return 4;
+        }
+
+        if (activeMapMode === "frequency" && d.properties.frequency_group === activeFrequencyGroup) {
+          return 3.5;
+        }
+
+        if (activeMapMode === "heatmap" && streetMatchesActiveHeatmap(d)) {
+          return 3.5;
+        }
+
+        if (activeMapMode === "none") {
+          return 1.8;
+        }
+
+        return 1.2;
+      })
+      .attr("opacity", d => {
+        if (activeMapMode === "none") {
+          return 0.95;
+        }
+
+        if (activeMapMode === "street") {
+          return selectedStreet === d ? 1 : 0.25;
+        }
+
+        if (activeMapMode === "frequency") {
+          return d.properties.frequency_group === activeFrequencyGroup ? 1 : 0.12;
+        }
+
+        if (activeMapMode === "heatmap") {
+          return streetMatchesActiveHeatmap(d) ? 1 : 0.12;
+        }
+
+        return 0.95;
+      });
+  }
+
   function updatePatternPanel(title, value, count) {
     d3.select("#detail-panel").html(`
       <h2>${title}</h2>
@@ -287,27 +354,16 @@ Promise.all([
 
   window.highlightMapByFrequencyGroup = function(frequencyGroup) {
     selectedStreet = null;
+    activeMapMode = "frequency";
+    activeFrequencyGroup = frequencyGroup;
+    activeHeatmapCells = new Set();
 
-    let matchCount = 0;
+    const matchCount = streets
+      .data()
+      .filter(d => d.properties.frequency_group === frequencyGroup)
+      .length;
 
-    d3.selectAll(".overlay")
-      .classed("selected", false)
-      .attr("stroke", d => {
-        const match = d.properties.frequency_group === frequencyGroup;
-
-        if (match) {
-          matchCount += 1;
-          return "#000";
-        }
-
-        return color(d.properties.frequency_group);
-      })
-      .attr("stroke-width", d => {
-        return d.properties.frequency_group === frequencyGroup ? 3.5 : 1.2;
-      })
-      .attr("opacity", d => {
-        return d.properties.frequency_group === frequencyGroup ? 1 : 0.12;
-      });
+    applyMapStyles();
 
     updatePatternPanel(
       "Frequency Group",
@@ -318,49 +374,22 @@ Promise.all([
 
   window.highlightMapByHeatmapCells = function(heatmapCells) {
     selectedStreet = null;
+    activeMapMode = "heatmap";
+    activeFrequencyGroup = null;
 
-    const selectedCells = new Set(
+    activeHeatmapCells = new Set(
       heatmapCells
         .split(",")
         .map(d => d.trim())
         .filter(d => d !== "" && !d.includes("Other"))
     );
 
-    let matchCount = 0;
+    const matchCount = streets
+      .data()
+      .filter(d => streetMatchesActiveHeatmap(d))
+      .length;
 
-    d3.selectAll(".overlay")
-      .classed("selected", false)
-      .attr("stroke", d => {
-        const details = d.properties.schedule_details;
-        const cells = details && details.heatmap_cells
-          ? details.heatmap_cells.split(",").map(cell => cell.trim())
-          : [];
-
-        const match = cells.some(cell => selectedCells.has(cell));
-
-        if (match) {
-          matchCount += 1;
-          return "#000";
-        }
-
-        return color(d.properties.frequency_group);
-      })
-      .attr("stroke-width", d => {
-        const details = d.properties.schedule_details;
-        const cells = details && details.heatmap_cells
-          ? details.heatmap_cells.split(",").map(cell => cell.trim())
-          : [];
-
-        return cells.some(cell => selectedCells.has(cell)) ? 3.5 : 1.2;
-      })
-      .attr("opacity", d => {
-        const details = d.properties.schedule_details;
-        const cells = details && details.heatmap_cells
-          ? details.heatmap_cells.split(",").map(cell => cell.trim())
-          : [];
-
-        return cells.some(cell => selectedCells.has(cell)) ? 1 : 0.12;
-      });
+    applyMapStyles();
 
     updatePatternPanel(
       "Weekday / Time Selection",
@@ -368,6 +397,32 @@ Promise.all([
       matchCount
     );
   };
+
+  window.resetDashboardSelection = function() {
+    selectedStreet = null;
+    activeMapMode = "none";
+    activeFrequencyGroup = null;
+    activeHeatmapCells = new Set();
+
+    applyMapStyles();
+
+    d3.select("#detail-panel").html(`
+      <h2>Selected Street</h2>
+      <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
+    `);
+
+    if (window.resetFrequencyHighlight) {
+      window.resetFrequencyHighlight();
+    }
+
+    if (window.resetHeatmapHighlight) {
+      window.resetHeatmapHighlight();
+    }
+  };
+
+  d3.select("#reset-selection").on("click", function() {
+    window.resetDashboardSelection();
+  });
 
 }).catch(error => {
   console.error("Error loading map data:", error);
