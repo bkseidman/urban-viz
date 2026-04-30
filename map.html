@@ -22,9 +22,14 @@
         margin-bottom: 20px;
       }
 
+      .map-layout {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+      }
+
       svg {
         display: block;
-        margin-top: 20px;
         background: #f8f8f8;
       }
 
@@ -34,6 +39,36 @@
 
       .overlay {
         cursor: pointer;
+      }
+
+      .overlay.selected {
+        stroke: #000;
+        stroke-width: 4px;
+        opacity: 1;
+      }
+
+      #detail-panel {
+        width: 280px;
+        min-height: 220px;
+        padding: 18px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      #detail-panel h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      #detail-panel p {
+        margin: 8px 0;
+      }
+
+      #detail-panel .hint {
+        color: #555;
       }
 
       #map-tooltip {
@@ -55,12 +90,21 @@
 
   <body>
     <h1>Street Sweeping Frequency Map</h1>
+
     <p class="note">
       Street segments are colored by grouped monthly sweeping frequency.
-      Hover over a colored street segment to see more information.
+      Hover over a colored street segment for a quick tooltip, or click a street
+      to view its details.
     </p>
 
-    <svg id="map" width="1000" height="800"></svg>
+    <div class="map-layout">
+      <svg id="map" width="1000" height="800"></svg>
+
+      <div id="detail-panel">
+        <h2>Selected Street</h2>
+        <p class="hint">Click a colored street segment to view its sweeping information.</p>
+      </div>
+    </div>
 
     <div id="map-tooltip"></div>
 
