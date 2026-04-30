@@ -6,6 +6,7 @@ let selectedStreet = null;
 let activeMapMode = "none";
 let activeFrequencyGroup = null;
 let activeHeatmapCells = new Set();
+let activeHeatmapValue = 0;
 let activeCorridor = null;
 
 function getStreetName(d) {
@@ -50,8 +51,20 @@ function getStreetCells(d) {
 }
 
 function streetMatchesActiveHeatmap(d) {
+  if (activeHeatmapCells.size === 0) {
+    return true;
+  }
+
   const cells = getStreetCells(d);
   return cells.some(cell => activeHeatmapCells.has(cell));
+}
+
+function streetMatchesActiveFrequency(d) {
+  if (!activeFrequencyGroup) {
+    return true;
+  }
+
+  return d.properties.frequency_group === activeFrequencyGroup;
 }
 
 function streetMatchesActiveCorridor(d) {
@@ -62,6 +75,10 @@ function streetMatchesActiveCorridor(d) {
   }
 
   return details.corridor === activeCorridor;
+}
+
+function streetMatchesActiveFilters(d) {
+  return streetMatchesActiveFrequency(d) && streetMatchesActiveHeatmap(d);
 }
 
 function updateLinkedViews(d) {
@@ -278,6 +295,7 @@ Promise.all([
       activeMapMode = "street";
       activeFrequencyGroup = null;
       activeHeatmapCells = new Set();
+      activeHeatmapValue = 0;
       activeCorridor = null;
 
       applyMapStyles();
@@ -319,15 +337,11 @@ Promise.all([
           return "#000";
         }
 
-        if (activeMapMode === "frequency" && d.properties.frequency_group === activeFrequencyGroup) {
-          return "#000";
-        }
-
-        if (activeMapMode === "heatmap" && streetMatchesActiveHeatmap(d)) {
-          return "#000";
-        }
-
         if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
+          return "#000";
+        }
+
+        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
           return "#000";
         }
 
@@ -338,15 +352,11 @@ Promise.all([
           return 4;
         }
 
-        if (activeMapMode === "frequency" && d.properties.frequency_group === activeFrequencyGroup) {
-          return 3.5;
-        }
-
-        if (activeMapMode === "heatmap" && streetMatchesActiveHeatmap(d)) {
-          return 3.5;
-        }
-
         if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
+          return 3.5;
+        }
+
+        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
           return 3.5;
         }
 
@@ -365,76 +375,79 @@ Promise.all([
           return selectedStreet === d ? 1 : 0.25;
         }
 
-        if (activeMapMode === "frequency") {
-          return d.properties.frequency_group === activeFrequencyGroup ? 1 : 0.12;
-        }
-
-        if (activeMapMode === "heatmap") {
-          return streetMatchesActiveHeatmap(d) ? 1 : 0.12;
-        }
-
         if (activeMapMode === "corridor") {
           return streetMatchesActiveCorridor(d) ? 1 : 0.12;
+        }
+
+        if (activeMapMode === "filters") {
+          return streetMatchesActiveFilters(d) ? 1 : 0.12;
         }
 
         return 0.95;
       });
   }
 
-  function updatePatternPanel(title, value, count) {
-    d3.select("#detail-panel").html(`
-      <h2>${title}</h2>
-      <p><strong>Selected pattern:</strong> ${value}</p>
-      <p><strong>Matching street segments highlighted:</strong> ${count}</p>
-      <p class="hint">
-        Streets matching this chart selection are highlighted on the map.
-        Click an individual street to return to street-level details.
-      </p>
-    `);
-  }
+  function updateFilterPanel() {
+    const hasFrequency = activeFrequencyGroup !== null;
+    const hasHeatmap = activeHeatmapCells.size > 0;
 
-  window.highlightMapByFrequencyGroup = function(frequencyGroup) {
-    selectedStreet = null;
-    activeMapMode = "frequency";
-    activeFrequencyGroup = frequencyGroup;
-    activeHeatmapCells = new Set();
-    activeCorridor = null;
+    if (!hasFrequency && !hasHeatmap) {
+      activeMapMode = "none";
+      applyMapStyles();
 
-    if (window.resetHeatmapHighlight) {
-      window.resetHeatmapHighlight();
+      d3.select("#detail-panel").html(`
+        <h2>Selected Street</h2>
+        <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
+      `);
+
+      return;
     }
 
-    if (window.resetTopStreetHighlight) {
-      window.resetTopStreetHighlight();
-    }
+    activeMapMode = "filters";
 
     const matchCount = streets
       .data()
-      .filter(d => d.properties.frequency_group === frequencyGroup)
+      .filter(d => streetMatchesActiveFilters(d))
       .length;
 
     applyMapStyles();
 
-    updatePatternPanel(
-      "Estimated Sweeps per Month",
-      frequencyGroup,
-      matchCount
-    );
-  };
+    const selectedCellsText = hasHeatmap
+      ? Array.from(activeHeatmapCells).join(", ")
+      : "None";
 
-  window.highlightMapByHeatmapCells = function(heatmapCells, heatmapValue) {
+    const frequencyText = hasFrequency
+      ? activeFrequencyGroup
+      : "Any";
+
+    d3.select("#detail-panel").html(`
+      <h2>Combined Selection</h2>
+      <p><strong>Frequency range:</strong> ${frequencyText}</p>
+      <p><strong>Selected heatmap cells:</strong> ${selectedCellsText}</p>
+      <p><strong>Matching street segments highlighted:</strong> ${matchCount}</p>
+      ${hasHeatmap ? `<p><strong>Combined heatmap value:</strong> ${activeHeatmapValue} estimated monthly scheduled occurrences</p>` : ""}
+      <p class="hint">
+        The map highlights streets matching the selected frequency range and at least one selected heatmap cell.
+      </p>
+    `);
+  }
+
+  window.setFrequencySelection = function(frequencyGroup) {
     selectedStreet = null;
-    activeMapMode = "heatmap";
-    activeFrequencyGroup = null;
     activeCorridor = null;
-
-    if (window.resetFrequencyHighlight) {
-      window.resetFrequencyHighlight();
-    }
+    activeFrequencyGroup = frequencyGroup;
 
     if (window.resetTopStreetHighlight) {
       window.resetTopStreetHighlight();
     }
+
+    updateFilterPanel();
+  };
+
+  window.setHeatmapSelection = function(heatmapCells, heatmapValue) {
+    selectedStreet = null;
+    activeCorridor = null;
+    activeHeatmapValue = heatmapValue || 0;
 
     activeHeatmapCells = new Set(
       heatmapCells
@@ -443,23 +456,11 @@ Promise.all([
         .filter(d => d !== "" && !d.includes("Other"))
     );
 
-    const matchCount = streets
-      .data()
-      .filter(d => streetMatchesActiveHeatmap(d))
-      .length;
+    if (window.resetTopStreetHighlight) {
+      window.resetTopStreetHighlight();
+    }
 
-    applyMapStyles();
-
-    d3.select("#detail-panel").html(`
-      <h2>Weekday / Time Selection</h2>
-      <p><strong>Selected cells:</strong> ${heatmapCells}</p>
-      <p><strong>Matching street segments highlighted:</strong> ${matchCount}</p>
-      <p><strong>Combined heatmap value:</strong> ${heatmapValue} estimated monthly scheduled occurrences</p>
-      <p class="hint">
-        The heatmap value counts scheduled monthly sweeping occurrences.
-        The map highlight counts unique street segments matching at least one selected cell.
-      </p>
-    `);
+    updateFilterPanel();
   };
 
   window.highlightMapByCorridor = function(corridor, summary) {
@@ -467,6 +468,7 @@ Promise.all([
     activeMapMode = "corridor";
     activeFrequencyGroup = null;
     activeHeatmapCells = new Set();
+    activeHeatmapValue = 0;
     activeCorridor = corridor;
 
     if (window.resetFrequencyHighlight) {
@@ -520,6 +522,7 @@ Promise.all([
     activeMapMode = "none";
     activeFrequencyGroup = null;
     activeHeatmapCells = new Set();
+    activeHeatmapValue = 0;
     activeCorridor = null;
 
     applyMapStyles();
