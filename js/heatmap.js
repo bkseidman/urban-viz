@@ -97,18 +97,11 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
 
       updateHeatmapSelection();
 
-      if (selectedHeatmapCells.size === 0) {
-        if (window.resetDashboardSelection) {
-          window.resetDashboardSelection();
-        }
-        return;
-      }
-
       const selectedCellList = Array.from(selectedHeatmapCells).join(", ");
       const selectedTotal = selectedHeatmapValueTotal();
 
-      if (window.highlightMapByHeatmapCells) {
-        window.highlightMapByHeatmapCells(selectedCellList, selectedTotal);
+      if (window.setHeatmapSelection) {
+        window.setHeatmapSelection(selectedCellList, selectedTotal);
       }
     });
 
@@ -150,6 +143,8 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
 
 window.highlightHeatmapCells = function(heatmapCells) {
   if (!heatmapCells) {
+    selectedHeatmapCells = new Set();
+    updateHeatmapSelection();
     return;
   }
 
@@ -165,9 +160,5 @@ window.highlightHeatmapCells = function(heatmapCells) {
 
 window.resetHeatmapHighlight = function() {
   selectedHeatmapCells = new Set();
-
-  d3.selectAll(".heatmap-cell")
-    .attr("opacity", 0.9)
-    .attr("stroke", "none")
-    .attr("stroke-width", 0);
+  updateHeatmapSelection();
 };
