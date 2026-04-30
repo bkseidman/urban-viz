@@ -2,6 +2,8 @@ const svg = d3.select("#map");
 const width = +svg.attr("width");
 const height = +svg.attr("height");
 
+let selectedStreet = null;
+
 function getStreetName(d) {
   return (
     d.properties.street ||
@@ -12,6 +14,20 @@ function getStreetName(d) {
     d.properties.name ||
     "Street segment"
   );
+}
+
+function updateDetailPanel(d) {
+  const props = d.properties;
+
+  d3.select("#detail-panel").html(`
+    <h2>Selected Street</h2>
+    <p><strong>Street:</strong> ${getStreetName(d)}</p>
+    <p><strong>Frequency group:</strong> ${props.frequency_group || "Unknown"}</p>
+    <p><strong>CNN:</strong> ${props.cnn || "Unknown"}</p>
+    <p class="hint">
+      This panel will later include weekday and time information once the schedule data is joined into the map.
+    </p>
+  `);
 }
 
 Promise.all([
@@ -66,8 +82,12 @@ Promise.all([
 
   const tooltip = d3.select("#map-tooltip");
 
+  // Main group so the base layer, overlay layer, and legend are organized together.
+  const mapGroup = svg.append("g")
+    .attr("class", "map-group");
+
   // Base layer (all streets)
-  svg.selectAll(".base")
+  mapGroup.selectAll(".base")
     .data(geoData.features)
     .enter()
     .append("path")
@@ -79,7 +99,7 @@ Promise.all([
     .attr("opacity", 0.7);
 
   // Overlay layer (only streets with data)
-  svg.selectAll(".overlay")
+  mapGroup.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
     .enter()
     .append("path")
@@ -114,16 +134,38 @@ Promise.all([
     })
 
     .on("mouseout", function(event, d) {
-      d3.select(this)
-        .attr("stroke", color(d.properties.frequency_group))
+      if (selectedStreet !== d) {
+        d3.select(this)
+          .attr("stroke", color(d.properties.frequency_group))
+          .attr("stroke-width", 1.8)
+          .attr("opacity", 0.95);
+      }
+
+      tooltip.style("display", "none");
+    })
+
+    .on("click", function(event, d) {
+      selectedStreet = d;
+
+      d3.selectAll(".overlay")
+        .classed("selected", false)
+        .attr("stroke", street => color(street.properties.frequency_group))
         .attr("stroke-width", 1.8)
         .attr("opacity", 0.95);
 
-      tooltip.style("display", "none");
+      d3.select(this)
+        .raise()
+        .classed("selected", true)
+        .attr("stroke", "#000")
+        .attr("stroke-width", 4)
+        .attr("opacity", 1);
+
+      updateDetailPanel(d);
     });
 
   // Legend
   const legend = svg.append("g")
+    .attr("class", "legend")
     .attr("transform", "translate(20,20)");
 
   legend.selectAll("rect")
