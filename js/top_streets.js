@@ -2,7 +2,7 @@ const topSvg = d3.select("#top-streets");
 const topWidth = +topSvg.attr("width");
 const topHeight = +topSvg.attr("height");
 
-const CHART_HIGHLIGHT_COLOR = "#e60000";
+const TOP_STREET_HIGHLIGHT_COLOR = "#e60000";
 
 const topMargin = { top: 40, right: 55, bottom: 45, left: 120 };
 const topInnerWidth = topWidth - topMargin.left - topMargin.right;
@@ -126,7 +126,9 @@ window.highlightTopStreetBar = function(corridor) {
       return d3.select(this).attr("data-corridor") === String(corridor) ? 1 : 0.25;
     })
     .attr("stroke", function() {
-      return d3.select(this).attr("data-corridor") === String(corridor) ? CHART_HIGHLIGHT_COLOR : "none";
+      return d3.select(this).attr("data-corridor") === String(corridor)
+        ? TOP_STREET_HIGHLIGHT_COLOR
+        : "none";
     })
     .attr("stroke-width", function() {
       return d3.select(this).attr("data-corridor") === String(corridor) ? 3 : 0;
