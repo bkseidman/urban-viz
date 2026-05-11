@@ -58,14 +58,10 @@ function labelFontSize(d) {
   const tileWidth = d.x1 - d.x0;
   const tileHeight = d.y1 - d.y0;
 
-  if (tileWidth < 34 || tileHeight < 24) {
-    return "9px";
-  }
-
-  if (tileWidth < 55 || tileHeight < 36) {
-    return "11px";
-  }
-
+  if (tileWidth < 26 || tileHeight < 16) return "7px";
+  if (tileWidth < 38 || tileHeight < 22) return "8px";
+  if (tileWidth < 55 || tileHeight < 30) return "10px";
+  if (tileWidth < 85 || tileHeight < 42) return "12px";
   return "18px";
 }
 
@@ -89,18 +85,22 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     d.count = +d.count;
   });
 
-  data.sort((a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency));
+  // Keep one ordered copy for the legend
+  const legendData = [...data].sort(
+    (a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency)
+  );
 
-  const root = d3.hierarchy({ children: data })
+  // Use descending size for the treemap so squarify can make nicer rectangles
+  const treemapData = [...data].sort((a, b) => b.count - a.count);
+
+  const root = d3.hierarchy({ children: treemapData })
     .sum(d => d.count)
-    .sort((a, b) => {
-      return frequencyOrder.indexOf(a.data.frequency) - frequencyOrder.indexOf(b.data.frequency);
-    });
+    .sort((a, b) => b.value - a.value);
 
   d3.treemap()
-    .tile(d3.treemapSquarify.ratio(1.15))
+    .tile(d3.treemapSquarify.ratio(1))
     .size([freqInnerWidth, freqInnerHeight])
-    .paddingInner(6)
+    .paddingInner(8)
     .paddingOuter(2)
     .round(true)(root);
 
@@ -152,14 +152,26 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("fill", d => frequencyColor(d.data.frequency))
     .attr("stroke", "white")
     .attr("stroke-width", 2)
-    .attr("opacity", 0.92);
+    .attr("opacity", 0.94);
+
+  // Clip labels so they don't spill outside tiny boxes
+  tiles.append("clipPath")
+    .attr("id", (d, i) => `treemap-label-clip-${i}`)
+    .append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", d => Math.max(0, d.x1 - d.x0))
+    .attr("height", d => Math.max(0, d.y1 - d.y0))
+    .attr("rx", 6)
+    .attr("ry", 6);
 
   tiles.append("text")
     .attr("class", "treemap-box-label")
-    .attr("x", d => (d.x1 - d.x0) / 2)
-    .attr("y", d => (d.y1 - d.y0) / 2)
-    .attr("text-anchor", "middle")
-    .attr("dominant-baseline", "middle")
+    .attr("x", 8)
+    .attr("y", 10)
+    .attr("dominant-baseline", "hanging")
+    .attr("text-anchor", "start")
+    .attr("clip-path", (d, i) => `url(#treemap-label-clip-${i})`)
     .attr("fill", d => readableTextColor(d.data.frequency))
     .style("font-weight", "bold")
     .style("font-size", d => labelFontSize(d))
@@ -185,7 +197,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .text("Frequency groups");
 
   const legendItems = legendG.selectAll(".treemap-legend-item")
-    .data(data)
+    .data(legendData)
     .enter()
     .append("g")
     .attr("class", "treemap-legend-item")
