@@ -9,7 +9,7 @@ let activeHeatmapCells = new Set();
 let activeHeatmapValue = 0;
 let activeCorridor = null;
 
-const MAP_HIGHLIGHT_COLOR = "#d100ff";
+const MAP_HIGHLIGHT_COLOR = "#e60000";
 
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
@@ -114,9 +114,6 @@ function updateLinkedViews(d) {
 
 /* =========================================================
    DETAIL PANEL HELPERS
-   These functions only control the selected-street panel.
-   The CSS classes live in the HTML file so final styling can
-   be adjusted later without rewriting the JS.
 ========================================================= */
 
 function normalizeDay(day) {
