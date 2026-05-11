@@ -28,14 +28,14 @@
         --radius-card: 10px;
         --radius-pill: 999px;
 
-        --dashboard-width: 1340px;
+        --dashboard-width: 1700px;
 
-        --side-width: 360px;
-        --map-width: 960px;
-        --map-height: 520px;
-
-        --chart-width: 420px;
-        --chart-height: 255px;
+        --side-width: 320px;
+        --map-width: 820px;
+        --map-height: 760px;
+        --charts-width: 520px;
+        --chart-svg-width: 500px;
+        --chart-svg-height: 205px;
       }
 
       * {
@@ -74,26 +74,15 @@
         color: #444;
         margin: 0;
         font-size: 14px;
-        max-width: 1250px;
+        max-width: 1350px;
       }
 
       .dashboard-layout {
-        width: var(--dashboard-width);
-      }
-
-      .top-row {
         display: grid;
-        grid-template-columns: var(--side-width) var(--map-width);
+        grid-template-columns: var(--side-width) var(--map-width) var(--charts-width);
         gap: 20px;
         align-items: start;
-        margin-bottom: 14px;
-      }
-
-      .bottom-row {
-        display: grid;
-        grid-template-columns: repeat(3, var(--chart-width));
-        gap: 40px;
-        align-items: start;
+        width: var(--dashboard-width);
       }
 
       .map-card,
@@ -105,21 +94,30 @@
       }
 
       .map-card {
-        height: 590px;
+        height: 828px;
         padding: 12px;
       }
 
       .side-column {
-        height: 590px;
+        height: 828px;
+      }
+
+      .charts-column {
+        width: var(--charts-width);
       }
 
       .chart-card {
-        height: 335px;
-        padding: 12px;
+        height: 266px;
+        padding: 10px 10px 8px 10px;
+        margin-bottom: 15px;
+      }
+
+      .chart-card:last-child {
+        margin-bottom: 0;
       }
 
       .card-heading {
-        margin-bottom: 8px;
+        margin-bottom: 7px;
       }
 
       .card-heading h2 {
@@ -131,8 +129,8 @@
       .card-heading p {
         margin: 0;
         color: #4b4b4b;
-        font-size: 12.5px;
-        line-height: 1.25;
+        font-size: 12px;
+        line-height: 1.22;
       }
 
       svg {
@@ -151,18 +149,13 @@
       #chart,
       #top-streets {
         display: block;
-        width: var(--chart-width);
-        height: var(--chart-height);
+        width: var(--chart-svg-width);
+        height: var(--chart-svg-height);
       }
-
-      /* =========================================================
-         DETAIL PANEL
-         Static left-side version with more room for street details.
-      ========================================================= */
 
       #detail-panel {
         width: 100%;
-        height: 525px;
+        height: 760px;
         padding: 15px;
         border: 1px solid var(--border-medium);
         border-radius: var(--radius-card);
@@ -336,11 +329,6 @@
         color: #555;
         font-size: 11.5px;
         line-height: 1.3;
-
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
       }
 
       .detail-footer-note {
@@ -361,7 +349,7 @@
       #reset-selection {
         margin-top: 10px;
         width: 100%;
-        height: 55px;
+        height: 58px;
         padding: 10px 12px;
         border: 1px solid #bbb;
         border-radius: 8px;
@@ -407,24 +395,24 @@
 
       .chart-title {
         font-weight: bold;
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .axis-label {
-        font-size: 10.5px;
+        font-size: 10px;
       }
 
       .bar-label {
-        font-size: 9px;
+        font-size: 8.5px;
       }
 
       .cell-label {
-        font-size: 8.5px;
+        font-size: 8px;
         pointer-events: none;
       }
 
       .top-street-label {
-        font-size: 9px;
+        font-size: 8.5px;
       }
 
       .nav-link {
@@ -444,31 +432,29 @@
       </header>
 
       <main class="dashboard-layout">
-        <section class="top-row">
-          <aside class="side-column">
-            <div id="detail-panel">
-              <h2 class="detail-panel-title">Selected Street</h2>
-              <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
-            </div>
-
-            <button id="reset-selection" type="button">
-              Reset selection
-            </button>
-          </aside>
-
-          <div class="map-card">
-            <div class="card-heading">
-              <h2>Interactive Street Sweeping Map</h2>
-              <p>
-                Streets are colored by estimated sweeps per month. Hover or click a segment to inspect its schedule.
-              </p>
-            </div>
-
-            <svg id="map" width="960" height="520"></svg>
+        <aside class="side-column">
+          <div id="detail-panel">
+            <h2 class="detail-panel-title">Selected Street</h2>
+            <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
           </div>
+
+          <button id="reset-selection" type="button">
+            Reset selection
+          </button>
+        </aside>
+
+        <section class="map-card">
+          <div class="card-heading">
+            <h2>Interactive Street Sweeping Map</h2>
+            <p>
+              Streets are colored by estimated sweeps per month. Hover or click a segment to inspect its schedule.
+            </p>
+          </div>
+
+          <svg id="map" width="820" height="760"></svg>
         </section>
 
-        <section class="bottom-row">
+        <section class="charts-column">
           <div class="chart-card">
             <div class="card-heading">
               <h2>Weekday and Time Pattern</h2>
@@ -477,7 +463,7 @@
               </p>
             </div>
 
-            <svg id="heatmap" width="420" height="255"></svg>
+            <svg id="heatmap" width="500" height="205"></svg>
           </div>
 
           <div class="chart-card">
@@ -488,7 +474,7 @@
               </p>
             </div>
 
-            <svg id="chart" width="420" height="255"></svg>
+            <svg id="chart" width="500" height="205"></svg>
           </div>
 
           <div class="chart-card">
@@ -499,7 +485,7 @@
               </p>
             </div>
 
-            <svg id="top-streets" width="420" height="255"></svg>
+            <svg id="top-streets" width="500" height="205"></svg>
           </div>
         </section>
       </main>
