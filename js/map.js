@@ -9,6 +9,8 @@ let activeHeatmapCells = new Set();
 let activeHeatmapValue = 0;
 let activeCorridor = null;
 
+const MAP_HIGHLIGHT_COLOR = "#d100ff";
+
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
     return d.properties.schedule_details.corridor;
@@ -541,7 +543,7 @@ Promise.all([
     .on("mouseover", function(event, d) {
       d3.select(this)
         .raise()
-        .attr("stroke", "#000")
+        .attr("stroke", MAP_HIGHLIGHT_COLOR)
         .attr("stroke-width", 4)
         .attr("opacity", 1);
 
@@ -621,15 +623,15 @@ Promise.all([
       .classed("selected", d => activeMapMode === "street" && selectedStreet === d)
       .attr("stroke", d => {
         if (activeMapMode === "street" && selectedStreet === d) {
-          return "#000";
+          return MAP_HIGHLIGHT_COLOR;
         }
 
         if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
-          return "#000";
+          return MAP_HIGHLIGHT_COLOR;
         }
 
         if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
-          return "#000";
+          return MAP_HIGHLIGHT_COLOR;
         }
 
         return color(d.properties.frequency_group);
