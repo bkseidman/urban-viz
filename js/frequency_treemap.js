@@ -49,6 +49,26 @@ function formatCount(value) {
   return d3.format(",")(value);
 }
 
+function readableTextColor(frequency) {
+  const darkGroups = new Set(["17-20", "21-28", "29-36", "37+"]);
+  return darkGroups.has(frequency) ? "white" : "#111";
+}
+
+function labelFontSize(d) {
+  const tileWidth = d.x1 - d.x0;
+  const tileHeight = d.y1 - d.y0;
+
+  if (tileWidth < 34 || tileHeight < 24) {
+    return "9px";
+  }
+
+  if (tileWidth < 55 || tileHeight < 36) {
+    return "11px";
+  }
+
+  return "18px";
+}
+
 const treemapTooltip = d3.select("body")
   .append("div")
   .attr("id", "treemap-tooltip")
@@ -73,10 +93,12 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const root = d3.hierarchy({ children: data })
     .sum(d => d.count)
-    .sort((a, b) => b.value - a.value);
+    .sort((a, b) => {
+      return frequencyOrder.indexOf(a.data.frequency) - frequencyOrder.indexOf(b.data.frequency);
+    });
 
   d3.treemap()
-    .tile(d3.treemapSquarify.ratio(1.2))
+    .tile(d3.treemapSquarify.ratio(1.15))
     .size([freqInnerWidth, freqInnerHeight])
     .paddingInner(6)
     .paddingOuter(2)
@@ -91,8 +113,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", d => `translate(${d.x0},${d.y0})`)
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
-      d3.select(this)
-        .raise();
+      d3.select(this).raise();
 
       treemapTooltip
         .style("display", "block")
@@ -132,6 +153,18 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke", "white")
     .attr("stroke-width", 2)
     .attr("opacity", 0.92);
+
+  tiles.append("text")
+    .attr("class", "treemap-box-label")
+    .attr("x", d => (d.x1 - d.x0) / 2)
+    .attr("y", d => (d.y1 - d.y0) / 2)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
+    .attr("fill", d => readableTextColor(d.data.frequency))
+    .style("font-weight", "bold")
+    .style("font-size", d => labelFontSize(d))
+    .style("pointer-events", "none")
+    .text(d => d.data.frequency);
 
   freqSvg.append("text")
     .attr("class", "chart-title")
