@@ -2,6 +2,8 @@ const heatSvg = d3.select("#heatmap");
 const heatWidth = +heatSvg.attr("width");
 const heatHeight = +heatSvg.attr("height");
 
+const CHART_HIGHLIGHT_COLOR = "#e60000";
+
 const heatMargin = { top: 60, right: 30, bottom: 70, left: 90 };
 const heatInnerWidth = heatWidth - heatMargin.left - heatMargin.right;
 const heatInnerHeight = heatHeight - heatMargin.top - heatMargin.bottom;
@@ -25,7 +27,7 @@ function updateHeatmapSelection() {
     })
     .attr("stroke", function() {
       const cell = d3.select(this).attr("data-cell");
-      return selectedHeatmapCells.has(cell) ? "#000" : "none";
+      return selectedHeatmapCells.has(cell) ? CHART_HIGHLIGHT_COLOR : "none";
     })
     .attr("stroke-width", function() {
       const cell = d3.select(this).attr("data-cell");
