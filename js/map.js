@@ -9,7 +9,7 @@ let activeHeatmapCells = new Set();
 let activeHeatmapValue = 0;
 let activeCorridor = null;
 
-const MAP_HIGHLIGHT_COLOR = "#e60000";
+const MAP_HIGHLIGHT_COLOR = "#8d5aa7";
 
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
@@ -481,19 +481,19 @@ Promise.all([
   const color = d3.scaleOrdinal()
     .domain(order)
     .range([
-      "#f7fbff",
-      "#eaf4fb",
-      "#dceef8",
-      "#cfe8f7",
-      "#b6dbef",
-      "#9ccdea",
-      "#7fbbe2",
-      "#64a7d7",
-      "#4a91cb",
-      "#327abf",
-      "#1f66b2",
-      "#0f4f9e",
-      "#08306b"
+      "#eef5f7",
+      "#e3eff3",
+      "#d6e8ee",
+      "#c6dde7",
+      "#b1d0de",
+      "#95bfd1",
+      "#79adc3",
+      "#6199b5",
+      "#4b87a8",
+      "#3b7396",
+      "#2d6286",
+      "#205271",
+      "#123b52"
     ]);
 
   const tooltip = d3.select("#map-tooltip");
@@ -521,9 +521,9 @@ Promise.all([
     .attr("class", "base")
     .attr("d", path)
     .attr("fill", "none")
-    .attr("stroke", "#d9d9d9")
+    .attr("stroke", "#d9d0bd")
     .attr("stroke-width", 0.8)
-    .attr("opacity", 0.7);
+    .attr("opacity", 0.78);
 
   const streets = mapGroup.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
@@ -535,7 +535,7 @@ Promise.all([
     .attr("stroke", d => color(d.properties.frequency_group))
     .attr("stroke-width", 1.8)
     .attr("stroke-linecap", "round")
-    .attr("opacity", 0.95)
+    .attr("opacity", 0.96)
 
     .on("mouseover", function(event, d) {
       d3.select(this)
@@ -654,7 +654,7 @@ Promise.all([
       })
       .attr("opacity", d => {
         if (activeMapMode === "none") {
-          return 0.95;
+          return 0.96;
         }
 
         if (activeMapMode === "street") {
@@ -669,7 +669,7 @@ Promise.all([
           return streetMatchesActiveFilters(d) ? 1 : 0.12;
         }
 
-        return 0.95;
+        return 0.96;
       });
   }
 
