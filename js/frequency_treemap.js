@@ -1,335 +1,510 @@
-const freqSvg = d3.select("#chart");
-const freqWidth = +freqSvg.attr("width");
-const freqHeight = +freqSvg.attr("height");
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Street Cleaning in San Francisco: Treemap Test</title>
 
-const freqMargin = { top: 42, right: 10, bottom: 88, left: 10 };
-const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
-const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 
-const freqG = freqSvg.append("g")
-  .attr("transform", `translate(${freqMargin.left},${freqMargin.top})`);
+    <style>
+      :root {
+        --page-bg: #f7f8fa;
+        --card-bg: #ffffff;
+        --text-main: #202124;
+        --text-muted: #5f6368;
+        --border-light: #dddddd;
+        --border-medium: #cccccc;
+        --border-soft: #e6eaef;
+        --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.055);
+        --shadow-medium: 0 2px 10px rgba(0, 0, 0, 0.09);
 
-let selectedFrequencyGroup = null;
+        --blue-light: #eaf4fb;
+        --blue-mid: #9ccdea;
+        --blue-strong: #327abf;
+        --blue-dark: #08306b;
 
-const frequencyOrder = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7-8",
-  "9-12",
-  "13-16",
-  "17-20",
-  "21-28",
-  "29-36",
-  "37+"
-];
+        --highlight-red: #e60000;
 
-const frequencyColor = d3.scaleOrdinal()
-  .domain(frequencyOrder)
-  .range([
-    "#f7fbff",
-    "#eaf4fb",
-    "#dceef8",
-    "#cfe8f7",
-    "#b6dbef",
-    "#9ccdea",
-    "#7fbbe2",
-    "#64a7d7",
-    "#4a91cb",
-    "#327abf",
-    "#1f66b2",
-    "#0f4f9e",
-    "#08306b"
-  ]);
+        --radius-card: 12px;
+        --radius-inner: 8px;
+        --radius-pill: 999px;
 
-function formatCount(value) {
-  return d3.format(",")(value);
-}
+        --dashboard-width: 1700px;
 
-function readableTextColor(frequency) {
-  const darkGroups = new Set(["17-20", "21-28", "29-36", "37+"]);
-  return darkGroups.has(frequency) ? "white" : "#111";
-}
+        --side-width: 320px;
+        --map-width: 700px;
+        --map-height: 760px;
 
-function tileWidth(d) {
-  return d.x1 - d.x0;
-}
-
-function tileHeight(d) {
-  return d.y1 - d.y0;
-}
-
-function boxLabelText(d) {
-  return `${d.data.frequency}x`;
-}
-
-function labelFontSize(d) {
-  const frequency = d.data.frequency;
-  const w = tileWidth(d);
-  const h = tileHeight(d);
-
-  // Custom fixes for the smallest labels.
-  if (frequency === "37+") return "7px";
-  if (frequency === "21-28") return "8px";
-  if (frequency === "13-16") return "9px";
-
-  // General size rules.
-  if (w < 28 || h < 18) return "7px";
-  if (w < 42 || h < 24) return "8px";
-  if (w < 60 || h < 32) return "9px";
-  if (w < 88 || h < 40) return "11px";
-  if (w < 130 || h < 56) return "13px";
-  return "18px";
-}
-
-function labelWeight(d) {
-  const frequency = d.data.frequency;
-
-  if (frequency === "37+" || frequency === "21-28") {
-    return "700";
-  }
-
-  return "800";
-}
-
-const treemapTooltip = d3.select("body")
-  .append("div")
-  .attr("id", "treemap-tooltip")
-  .style("position", "absolute")
-  .style("display", "none")
-  .style("pointer-events", "none")
-  .style("background", "white")
-  .style("border", "1px solid #999")
-  .style("border-radius", "6px")
-  .style("padding", "8px 10px")
-  .style("font-size", "13px")
-  .style("line-height", "1.4")
-  .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
-  .style("z-index", "20");
-
-d3.csv("data/processed/frequency_distribution.csv").then(data => {
-  data.forEach(d => {
-    d.count = +d.count;
-  });
-
-  const legendData = [...data].sort(
-    (a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency)
-  );
-
-  const treemapData = [...data].sort((a, b) => b.count - a.count);
-
-  const root = d3.hierarchy({ children: treemapData })
-    .sum(d => d.count)
-    .sort((a, b) => b.value - a.value);
-
-  d3.treemap()
-    .tile(d3.treemapSquarify.ratio(1))
-    .size([freqInnerWidth, freqInnerHeight])
-    .paddingInner(0)
-    .paddingOuter(0)
-    .round(true)(root);
-
-  const tiles = freqG.selectAll(".freq-tile")
-    .data(root.leaves())
-    .enter()
-    .append("g")
-    .attr("class", "freq-tile")
-    .attr("data-frequency", d => d.data.frequency)
-    .attr("transform", d => `translate(${d.x0},${d.y0})`)
-    .style("cursor", "pointer")
-    .on("mouseover", function(event, d) {
-      d3.select(this).raise();
-
-      treemapTooltip
-        .style("display", "block")
-        .html(`
-          <strong>${d.data.frequency} times/month</strong><br>
-          ${formatCount(d.data.count)} street segments
-        `);
-    })
-    .on("mousemove", function(event) {
-      treemapTooltip
-        .style("left", `${event.pageX + 12}px`)
-        .style("top", `${event.pageY + 12}px`);
-    })
-    .on("mouseout", function() {
-      treemapTooltip.style("display", "none");
-    })
-    .on("click", function(event, d) {
-      if (selectedFrequencyGroup === d.data.frequency) {
-        selectedFrequencyGroup = null;
-      } else {
-        selectedFrequencyGroup = d.data.frequency;
+        --charts-width: 640px;
+        --chart-svg-width: 620px;
+        --chart-svg-height: 245px;
       }
 
-      updateFrequencySelection();
-
-      if (window.setFrequencySelection) {
-        window.setFrequencySelection(selectedFrequencyGroup);
-      }
-    });
-
-  tiles.append("rect")
-    .attr("width", d => tileWidth(d))
-    .attr("height", d => tileHeight(d))
-    .attr("fill", d => frequencyColor(d.data.frequency))
-    .attr("stroke", "#ffffff")
-    .attr("stroke-width", 1);
-
-  tiles.append("clipPath")
-    .attr("id", (d, i) => `treemap-label-clip-${i}`)
-    .append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", d => Math.max(0, tileWidth(d)))
-    .attr("height", d => Math.max(0, tileHeight(d)));
-
-  tiles.append("text")
-    .attr("class", "treemap-box-label")
-    .attr("x", d => tileWidth(d) / 2)
-    .attr("y", d => tileHeight(d) / 2)
-    .attr("text-anchor", "middle")
-    .attr("dominant-baseline", "middle")
-    .attr("clip-path", (d, i) => `url(#treemap-label-clip-${i})`)
-    .attr("fill", d => readableTextColor(d.data.frequency))
-    .style("font-weight", d => labelWeight(d))
-    .style("font-size", d => labelFontSize(d))
-    .style("pointer-events", "none")
-    .text(d => boxLabelText(d));
-
-  freqSvg.append("text")
-    .attr("class", "chart-title")
-    .attr("x", freqWidth / 2)
-    .attr("y", 24)
-    .attr("text-anchor", "middle")
-    .text("Street Segments by Estimated Sweeps per Month");
-
-  const legendG = freqSvg.append("g")
-    .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 72})`);
-
-  legendG.append("text")
-    .attr("x", 0)
-    .attr("y", 0)
-    .style("font-size", "11px")
-    .style("font-weight", "bold")
-    .text("Frequency groups");
-
-  const legendItems = legendG.selectAll(".treemap-legend-item")
-    .data(legendData)
-    .enter()
-    .append("g")
-    .attr("class", "treemap-legend-item")
-    .attr("data-frequency", d => d.frequency)
-    .attr("transform", function(d, i) {
-      const col = i % 5;
-      const row = Math.floor(i / 5);
-      return `translate(${col * 118},${17 + row * 17})`;
-    })
-    .style("cursor", "pointer")
-    .on("mouseover", function(event, d) {
-      treemapTooltip
-        .style("display", "block")
-        .html(`
-          <strong>${d.frequency} times/month</strong><br>
-          ${formatCount(d.count)} street segments
-        `);
-    })
-    .on("mousemove", function(event) {
-      treemapTooltip
-        .style("left", `${event.pageX + 12}px`)
-        .style("top", `${event.pageY + 12}px`);
-    })
-    .on("mouseout", function() {
-      treemapTooltip.style("display", "none");
-    })
-    .on("click", function(event, d) {
-      if (selectedFrequencyGroup === d.frequency) {
-        selectedFrequencyGroup = null;
-      } else {
-        selectedFrequencyGroup = d.frequency;
+      * {
+        box-sizing: border-box;
       }
 
-      updateFrequencySelection();
-
-      if (window.setFrequencySelection) {
-        window.setFrequencySelection(selectedFrequencyGroup);
-      }
-    });
-
-  legendItems.append("rect")
-    .attr("width", 11)
-    .attr("height", 11)
-    .attr("rx", 2)
-    .attr("ry", 2)
-    .attr("fill", d => frequencyColor(d.frequency))
-    .attr("stroke", "#999")
-    .attr("stroke-width", 0.6);
-
-  legendItems.append("text")
-    .attr("x", 17)
-    .attr("y", 9.5)
-    .style("font-size", "10px")
-    .style("font-weight", "bold")
-    .text(d => `${d.frequency}: ${formatCount(d.count)}`);
-
-}).catch(error => {
-  console.error("Error loading frequency treemap data:", error);
-});
-
-function updateFrequencySelection() {
-  d3.selectAll(".freq-tile")
-    .attr("opacity", function() {
-      const frequency = d3.select(this).attr("data-frequency");
-
-      if (!selectedFrequencyGroup) {
-        return 1;
+      body {
+        font-family: Arial, sans-serif;
+        margin: 10px 0;
+        line-height: 1.35;
+        background: var(--page-bg);
+        color: var(--text-main);
+        min-width: var(--dashboard-width);
       }
 
-      return frequency === selectedFrequencyGroup ? 1 : 0.25;
-    });
-
-  d3.selectAll(".freq-tile rect")
-    .attr("stroke", function() {
-      const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? "#d100ff" : "#ffffff";
-    })
-    .attr("stroke-width", function() {
-      const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? 2 : 1;
-    });
-
-  d3.selectAll(".treemap-legend-item")
-    .attr("opacity", function() {
-      const frequency = d3.select(this).attr("data-frequency");
-
-      if (!selectedFrequencyGroup) {
-        return 1;
+      .page-shell {
+        width: var(--dashboard-width);
+        margin: 0 auto;
       }
 
-      return frequency === selectedFrequencyGroup ? 1 : 0.35;
-    });
+      .page-header {
+        margin-bottom: 8px;
+      }
 
-  d3.selectAll(".treemap-legend-item rect")
-    .attr("stroke", function() {
-      const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? "#d100ff" : "#999";
-    })
-    .attr("stroke-width", function() {
-      const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? 2 : 0.6;
-    });
-}
+      h1 {
+        margin: 0 0 3px 0;
+        font-size: 28px;
+        line-height: 1.1;
+      }
 
-window.highlightFrequencyGroup = function(frequencyGroup) {
-  selectedFrequencyGroup = frequencyGroup;
-  updateFrequencySelection();
-};
+      h2 {
+        margin: 0;
+      }
 
-window.resetFrequencyHighlight = function() {
-  selectedFrequencyGroup = null;
-  updateFrequencySelection();
-};
+      .subtitle {
+        color: #444;
+        margin: 0;
+        font-size: 14px;
+        max-width: 1350px;
+      }
+
+      .dashboard-layout {
+        display: grid;
+        grid-template-columns: var(--side-width) var(--map-width) var(--charts-width);
+        gap: 20px;
+        align-items: start;
+        width: var(--dashboard-width);
+      }
+
+      .map-card,
+      .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-soft);
+      }
+
+      .map-card {
+        height: 828px;
+        padding: 12px;
+      }
+
+      .side-column {
+        height: 828px;
+      }
+
+      .charts-column {
+        width: var(--charts-width);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .chart-card {
+        height: 324px;
+        padding: 10px;
+        overflow: hidden;
+      }
+
+      .card-heading {
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #edf1f4;
+      }
+
+      .card-heading h2 {
+        font-size: 18px;
+        line-height: 1.15;
+        margin-bottom: 3px;
+      }
+
+      .card-heading p {
+        margin: 0;
+        color: #4b4b4b;
+        font-size: 12px;
+        line-height: 1.22;
+      }
+
+      svg {
+        background: white;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-inner);
+      }
+
+      #map {
+        display: block;
+        width: var(--map-width);
+        height: var(--map-height);
+        background: #f8f8f8;
+      }
+
+      #heatmap,
+      #chart,
+      #top-streets {
+        display: block;
+        width: var(--chart-svg-width);
+        height: var(--chart-svg-height);
+      }
+
+      /* =========================================================
+         DETAIL PANEL
+      ========================================================= */
+
+      #detail-panel {
+        width: 100%;
+        height: 760px;
+        padding: 15px;
+        border: 1px solid var(--border-medium);
+        border-radius: var(--radius-card);
+        background: var(--card-bg);
+        box-shadow: var(--shadow-medium);
+        overflow: hidden;
+      }
+
+      .detail-panel-title {
+        margin: 0 0 10px 0;
+        font-size: 21px;
+        line-height: 1.1;
+      }
+
+      .detail-street-name {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.1;
+        font-weight: 800;
+      }
+
+      .detail-limits {
+        margin: 5px 0 0 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.25;
+      }
+
+      .detail-meta {
+        margin: 6px 0 0 0;
+        color: #777;
+        font-size: 10.5px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .detail-section {
+        margin-top: 11px;
+        padding-top: 10px;
+        border-top: 1px solid #e3e3e3;
+      }
+
+      .detail-section:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+      }
+
+      .detail-section-title {
+        margin: 0 0 6px 0;
+        font-size: 11px;
+        color: #555;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .detail-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .detail-stat {
+        border: 1px solid #dbe8f2;
+        background: #f5f9fc;
+        border-radius: 8px;
+        padding: 8px;
+        min-width: 0;
+      }
+
+      .detail-stat-value {
+        display: block;
+        font-size: 17px;
+        line-height: 1.05;
+        font-weight: 800;
+        color: #111;
+      }
+
+      .detail-stat-label {
+        display: block;
+        margin-top: 2px;
+        font-size: 10px;
+        color: #666;
+        line-height: 1.15;
+      }
+
+      .weekday-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+      }
+
+      .weekday-chip {
+        text-align: center;
+        border-radius: 5px;
+        padding: 4px 0;
+        font-size: 10px;
+        font-weight: 700;
+        border: 1px solid #d9d9d9;
+        color: #888;
+        background: #f3f3f3;
+      }
+
+      .weekday-chip.active {
+        color: white;
+        background: var(--blue-strong);
+        border-color: var(--blue-strong);
+      }
+
+      .time-badge {
+        display: block;
+        margin-top: 7px;
+        padding: 7px 8px;
+        border-radius: 7px;
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      .detail-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .detail-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 21px;
+        padding: 3px 8px;
+        border-radius: var(--radius-pill);
+        border: 1px solid #d7d7d7;
+        background: #f7f7f7;
+        font-size: 11px;
+        font-weight: 700;
+        color: #333;
+      }
+
+      .detail-pill.blue {
+        background: var(--blue-light);
+        border-color: #c9e3f5;
+        color: #16456f;
+      }
+
+      .detail-pill.good {
+        background: #eef7ef;
+        border-color: #cce5cf;
+        color: #27632a;
+      }
+
+      .detail-pill.warning {
+        background: #fff7e6;
+        border-color: #f0d49b;
+        color: #7a5200;
+      }
+
+      .detail-row {
+        margin: 6px 0;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      .detail-row strong {
+        font-weight: 800;
+      }
+
+      .detail-summary {
+        margin: 5px 0 0 0;
+        color: #555;
+        font-size: 11.5px;
+        line-height: 1.3;
+      }
+
+      .detail-footer-note {
+        margin: 9px 0 0 0;
+        padding-top: 8px;
+        border-top: 1px solid #e8e8e8;
+        color: #666;
+        font-size: 11.5px;
+        line-height: 1.3;
+      }
+
+      .detail-empty {
+        color: #555;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      #reset-selection {
+        margin-top: 10px;
+        width: 100%;
+        height: 58px;
+        padding: 10px 12px;
+        border: 1px solid #bbb;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 700;
+        box-shadow: var(--shadow-soft);
+      }
+
+      #reset-selection:hover {
+        background: #f1f1f1;
+      }
+
+      #map-tooltip {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 260px;
+        z-index: 10;
+      }
+
+      .overlay {
+        cursor: pointer;
+      }
+
+      .overlay.selected {
+        stroke: var(--highlight-red);
+        stroke-width: 4px;
+        opacity: 1;
+      }
+
+      .legend text {
+        font-size: 12px;
+      }
+
+      .chart-title {
+        font-weight: bold;
+        font-size: 13px;
+      }
+
+      .axis-label {
+        font-size: 10px;
+      }
+
+      .bar-label {
+        font-size: 8.5px;
+      }
+
+      .cell-label {
+        font-size: 8px;
+        pointer-events: none;
+      }
+
+      .top-street-label {
+        font-size: 8.5px;
+      }
+
+      .nav-link {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page-shell">
+      <header class="page-header">
+        <h1>Street Cleaning in San Francisco: Patterns and Frequency</h1>
+        <p class="subtitle">
+          An interactive D3 dashboard for exploring where San Francisco street sweeping happens most often,
+          when it happens, and how specific streets fit into the citywide pattern.
+        </p>
+      </header>
+
+      <main class="dashboard-layout">
+        <aside class="side-column">
+          <div id="detail-panel">
+            <h2 class="detail-panel-title">Selected Street</h2>
+            <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
+          </div>
+
+          <button id="reset-selection" type="button">
+            Reset selection
+          </button>
+        </aside>
+
+        <section class="map-card">
+          <div class="card-heading">
+            <h2>Interactive Street Sweeping Map</h2>
+            <p>
+              Streets are colored by estimated sweeps per month. Hover or click a segment to inspect its schedule.
+            </p>
+          </div>
+
+          <svg id="map" width="700" height="760"></svg>
+        </section>
+
+        <section class="charts-column">
+          <div class="chart-card">
+            <div class="card-heading">
+              <h2>Weekday and Time Pattern</h2>
+              <p>
+                Click cells to highlight streets swept during selected weekday/time windows.
+              </p>
+            </div>
+
+            <svg id="heatmap" width="620" height="245"></svg>
+          </div>
+
+          <div class="chart-card">
+            <div class="card-heading">
+              <h2>Frequency Treemap</h2>
+              <p>
+                Rectangle size shows how many street segments fall into each sweeps/month group.
+              </p>
+            </div>
+
+            <svg id="chart" width="620" height="245"></svg>
+          </div>
+
+          <div class="chart-card">
+            <div class="card-heading">
+              <h2>Most Sweeping Activity by Street</h2>
+              <p>
+                Full streets are grouped by name. Click a bar to highlight that street on the map.
+              </p>
+            </div>
+
+            <svg id="top-streets" width="620" height="245"></svg>
+          </div>
+        </section>
+      </main>
+
+      <div id="map-tooltip"></div>
+    </div>
+
+    <script src="js/map.js"></script>
+    <script src="js/heatmap.js"></script>
+    <script src="js/frequency_treemap.js"></script>
+    <script src="js/top_streets.js"></script>
+  </body>
+</html>
