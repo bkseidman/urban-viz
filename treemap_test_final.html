@@ -38,7 +38,7 @@
 
         --charts-width: 640px;
         --chart-svg-width: 620px;
-        --chart-svg-height: 230px;
+        --chart-svg-height: 245px;
       }
 
       * {
@@ -107,16 +107,15 @@
 
       .charts-column {
         width: var(--charts-width);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
       }
 
       .chart-card {
-        height: 266px;
-        padding: 10px 10px 8px 10px;
-        margin-bottom: 15px;
-      }
-
-      .chart-card:last-child {
-        margin-bottom: 0;
+        height: 324px;
+        padding: 10px;
+        overflow: hidden;
       }
 
       .card-heading {
@@ -473,7 +472,7 @@
               </p>
             </div>
 
-            <svg id="heatmap" width="620" height="230"></svg>
+            <svg id="heatmap" width="620" height="245"></svg>
           </div>
 
           <div class="chart-card">
@@ -484,7 +483,7 @@
               </p>
             </div>
 
-            <svg id="chart" width="620" height="230"></svg>
+            <svg id="chart" width="620" height="245"></svg>
           </div>
 
           <div class="chart-card">
@@ -495,7 +494,7 @@
               </p>
             </div>
 
-            <svg id="top-streets" width="620" height="230"></svg>
+            <svg id="top-streets" width="620" height="245"></svg>
           </div>
         </section>
       </main>
