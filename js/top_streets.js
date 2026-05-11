@@ -11,6 +11,21 @@ const topInnerHeight = topHeight - topMargin.top - topMargin.bottom;
 const topG = topSvg.append("g")
   .attr("transform", `translate(${topMargin.left},${topMargin.top})`);
 
+const topStreetTooltip = d3.select("body")
+  .append("div")
+  .attr("id", "top-streets-tooltip")
+  .style("position", "absolute")
+  .style("display", "none")
+  .style("pointer-events", "none")
+  .style("background", "white")
+  .style("border", "1px solid #999")
+  .style("border-radius", "6px")
+  .style("padding", "8px 10px")
+  .style("font-size", "13px")
+  .style("line-height", "1.4")
+  .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
+  .style("z-index", "20");
+
 function shortenLabel(label, maxLength) {
   if (label.length > maxLength) {
     return label.slice(0, maxLength) + "...";
@@ -49,6 +64,12 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
 
   const topData = Array.from(streetMap.values())
     .filter(d => d.segment_count > 0)
+    .map(d => ({
+      ...d,
+      avg_frequency: d.segment_count > 0
+        ? (d.total_frequency / d.segment_count).toFixed(1)
+        : "0.0"
+    }))
     .sort((a, b) => b.total_frequency - a.total_frequency)
     .slice(0, 10);
 
@@ -82,6 +103,24 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     .attr("fill", "steelblue")
     .attr("opacity", 0.85)
     .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+      topStreetTooltip
+        .style("display", "block")
+        .html(`
+          <strong>${d.corridor}</strong><br>
+          ${d.total_frequency.toLocaleString()} total estimated sweeps per month<br>
+          ${d.segment_count} street segments grouped together<br>
+          Average per segment: ${d.avg_frequency}x/month
+        `);
+    })
+    .on("mousemove", function(event) {
+      topStreetTooltip
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY + 12}px`);
+    })
+    .on("mouseout", function() {
+      topStreetTooltip.style("display", "none");
+    })
     .on("click", function(event, d) {
       if (window.highlightTopStreetBar) {
         window.highlightTopStreetBar(d.corridor);
