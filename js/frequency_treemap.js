@@ -54,14 +54,43 @@ function readableTextColor(frequency) {
   return darkGroups.has(frequency) ? "white" : "#111";
 }
 
-function labelFontSize(d) {
-  const tileWidth = d.x1 - d.x0;
-  const tileHeight = d.y1 - d.y0;
+function tileWidth(d) {
+  return d.x1 - d.x0;
+}
 
-  if (tileWidth < 26 || tileHeight < 16) return "7px";
-  if (tileWidth < 38 || tileHeight < 22) return "8px";
-  if (tileWidth < 55 || tileHeight < 30) return "10px";
-  if (tileWidth < 85 || tileHeight < 42) return "12px";
+function tileHeight(d) {
+  return d.y1 - d.y0;
+}
+
+function shouldCenterLabel(d) {
+  return tileWidth(d) < 86 || tileHeight(d) < 34;
+}
+
+function labelX(d) {
+  return shouldCenterLabel(d) ? tileWidth(d) / 2 : 8;
+}
+
+function labelY(d) {
+  return shouldCenterLabel(d) ? tileHeight(d) / 2 : 10;
+}
+
+function labelAnchor(d) {
+  return shouldCenterLabel(d) ? "middle" : "start";
+}
+
+function labelBaseline(d) {
+  return shouldCenterLabel(d) ? "middle" : "hanging";
+}
+
+function labelFontSize(d) {
+  const w = tileWidth(d);
+  const h = tileHeight(d);
+
+  if (w < 28 || h < 18) return "7px";
+  if (w < 42 || h < 24) return "8px";
+  if (w < 58 || h < 30) return "9px";
+  if (w < 80 || h < 36) return "11px";
+  if (w < 120 || h < 50) return "13px";
   return "18px";
 }
 
@@ -85,12 +114,10 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     d.count = +d.count;
   });
 
-  // Keep one ordered copy for the legend
   const legendData = [...data].sort(
     (a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency)
   );
 
-  // Use descending size for the treemap so squarify can make nicer rectangles
   const treemapData = [...data].sort((a, b) => b.count - a.count);
 
   const root = d3.hierarchy({ children: treemapData })
@@ -145,8 +172,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     });
 
   tiles.append("rect")
-    .attr("width", d => d.x1 - d.x0)
-    .attr("height", d => d.y1 - d.y0)
+    .attr("width", d => tileWidth(d))
+    .attr("height", d => tileHeight(d))
     .attr("rx", 6)
     .attr("ry", 6)
     .attr("fill", d => frequencyColor(d.data.frequency))
@@ -154,23 +181,22 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke-width", 2)
     .attr("opacity", 0.94);
 
-  // Clip labels so they don't spill outside tiny boxes
   tiles.append("clipPath")
     .attr("id", (d, i) => `treemap-label-clip-${i}`)
     .append("rect")
     .attr("x", 0)
     .attr("y", 0)
-    .attr("width", d => Math.max(0, d.x1 - d.x0))
-    .attr("height", d => Math.max(0, d.y1 - d.y0))
+    .attr("width", d => Math.max(0, tileWidth(d)))
+    .attr("height", d => Math.max(0, tileHeight(d)))
     .attr("rx", 6)
     .attr("ry", 6);
 
   tiles.append("text")
     .attr("class", "treemap-box-label")
-    .attr("x", 8)
-    .attr("y", 10)
-    .attr("dominant-baseline", "hanging")
-    .attr("text-anchor", "start")
+    .attr("x", d => labelX(d))
+    .attr("y", d => labelY(d))
+    .attr("text-anchor", d => labelAnchor(d))
+    .attr("dominant-baseline", d => labelBaseline(d))
     .attr("clip-path", (d, i) => `url(#treemap-label-clip-${i})`)
     .attr("fill", d => readableTextColor(d.data.frequency))
     .style("font-weight", "bold")
