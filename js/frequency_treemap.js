@@ -2,7 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 42, right: 10, bottom: 78, left: 10 };
+const freqMargin = { top: 42, right: 10, bottom: 88, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -62,10 +62,21 @@ function tileHeight(d) {
   return d.y1 - d.y0;
 }
 
+function boxLabelText(d) {
+  return `${d.data.frequency}x`;
+}
+
 function labelFontSize(d) {
+  const frequency = d.data.frequency;
   const w = tileWidth(d);
   const h = tileHeight(d);
 
+  // Custom fixes for the smallest labels.
+  if (frequency === "37+") return "7px";
+  if (frequency === "21-28") return "8px";
+  if (frequency === "13-16") return "9px";
+
+  // General size rules.
   if (w < 28 || h < 18) return "7px";
   if (w < 42 || h < 24) return "8px";
   if (w < 60 || h < 32) return "9px";
@@ -74,8 +85,14 @@ function labelFontSize(d) {
   return "18px";
 }
 
-function boxLabelText(d) {
-  return `${d.data.frequency}x`;
+function labelWeight(d) {
+  const frequency = d.data.frequency;
+
+  if (frequency === "37+" || frequency === "21-28") {
+    return "700";
+  }
+
+  return "800";
 }
 
 const treemapTooltip = d3.select("body")
@@ -178,7 +195,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("dominant-baseline", "middle")
     .attr("clip-path", (d, i) => `url(#treemap-label-clip-${i})`)
     .attr("fill", d => readableTextColor(d.data.frequency))
-    .style("font-weight", "bold")
+    .style("font-weight", d => labelWeight(d))
     .style("font-size", d => labelFontSize(d))
     .style("pointer-events", "none")
     .text(d => boxLabelText(d));
@@ -192,12 +209,12 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 66})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 72})`);
 
   legendG.append("text")
     .attr("x", 0)
     .attr("y", 0)
-    .style("font-size", "12px")
+    .style("font-size", "11px")
     .style("font-weight", "bold")
     .text("Frequency groups");
 
@@ -210,7 +227,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 5;
       const row = Math.floor(i / 5);
-      return `translate(${col * 118},${18 + row * 18})`;
+      return `translate(${col * 118},${17 + row * 17})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
@@ -244,8 +261,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     });
 
   legendItems.append("rect")
-    .attr("width", 12)
-    .attr("height", 12)
+    .attr("width", 11)
+    .attr("height", 11)
     .attr("rx", 2)
     .attr("ry", 2)
     .attr("fill", d => frequencyColor(d.frequency))
@@ -253,9 +270,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke-width", 0.6);
 
   legendItems.append("text")
-    .attr("x", 18)
-    .attr("y", 10)
-    .style("font-size", "10.5px")
+    .attr("x", 17)
+    .attr("y", 9.5)
+    .style("font-size", "10px")
     .style("font-weight", "bold")
     .text(d => `${d.frequency}: ${formatCount(d.count)}`);
 
