@@ -31,11 +31,12 @@
         --dashboard-width: 1700px;
 
         --side-width: 320px;
-        --map-width: 820px;
+        --map-width: 700px;
         --map-height: 760px;
-        --charts-width: 520px;
-        --chart-svg-width: 500px;
-        --chart-svg-height: 205px;
+
+        --charts-width: 640px;
+        --chart-svg-width: 620px;
+        --chart-svg-height: 230px;
       }
 
       * {
@@ -152,6 +153,11 @@
         width: var(--chart-svg-width);
         height: var(--chart-svg-height);
       }
+
+      /* =========================================================
+         DETAIL PANEL
+         Static left-side version.
+      ========================================================= */
 
       #detail-panel {
         width: 100%;
@@ -451,7 +457,7 @@
             </p>
           </div>
 
-          <svg id="map" width="820" height="760"></svg>
+          <svg id="map" width="700" height="760"></svg>
         </section>
 
         <section class="charts-column">
@@ -463,7 +469,7 @@
               </p>
             </div>
 
-            <svg id="heatmap" width="500" height="205"></svg>
+            <svg id="heatmap" width="620" height="230"></svg>
           </div>
 
           <div class="chart-card">
@@ -474,7 +480,7 @@
               </p>
             </div>
 
-            <svg id="chart" width="500" height="205"></svg>
+            <svg id="chart" width="620" height="230"></svg>
           </div>
 
           <div class="chart-card">
@@ -485,7 +491,7 @@
               </p>
             </div>
 
-            <svg id="top-streets" width="500" height="205"></svg>
+            <svg id="top-streets" width="620" height="230"></svg>
           </div>
         </section>
       </main>
