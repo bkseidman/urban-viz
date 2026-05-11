@@ -2,7 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 54, right: 16, bottom: 102, left: 16 };
+const freqMargin = { top: 42, right: 10, bottom: 78, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -68,9 +68,9 @@ function labelFontSize(d) {
 
   if (w < 28 || h < 18) return "7px";
   if (w < 42 || h < 24) return "8px";
-  if (w < 58 || h < 30) return "9px";
-  if (w < 80 || h < 38) return "11px";
-  if (w < 120 || h < 55) return "13px";
+  if (w < 60 || h < 32) return "9px";
+  if (w < 88 || h < 40) return "11px";
+  if (w < 130 || h < 56) return "13px";
   return "18px";
 }
 
@@ -111,8 +111,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   d3.treemap()
     .tile(d3.treemapSquarify.ratio(1))
     .size([freqInnerWidth, freqInnerHeight])
-    .paddingInner(8)
-    .paddingOuter(2)
+    .paddingInner(0)
+    .paddingOuter(0)
     .round(true)(root);
 
   const tiles = freqG.selectAll(".freq-tile")
@@ -158,12 +158,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   tiles.append("rect")
     .attr("width", d => tileWidth(d))
     .attr("height", d => tileHeight(d))
-    .attr("rx", 6)
-    .attr("ry", 6)
     .attr("fill", d => frequencyColor(d.data.frequency))
-    .attr("stroke", "white")
-    .attr("stroke-width", 2)
-    .attr("opacity", 0.94);
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 1);
 
   tiles.append("clipPath")
     .attr("id", (d, i) => `treemap-label-clip-${i}`)
@@ -171,9 +168,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("x", 0)
     .attr("y", 0)
     .attr("width", d => Math.max(0, tileWidth(d)))
-    .attr("height", d => Math.max(0, tileHeight(d)))
-    .attr("rx", 6)
-    .attr("ry", 6);
+    .attr("height", d => Math.max(0, tileHeight(d)));
 
   tiles.append("text")
     .attr("class", "treemap-box-label")
@@ -191,13 +186,13 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   freqSvg.append("text")
     .attr("class", "chart-title")
     .attr("x", freqWidth / 2)
-    .attr("y", 28)
+    .attr("y", 24)
     .attr("text-anchor", "middle")
     .text("Street Segments by Estimated Sweeps per Month");
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left + 2},${freqHeight - 86})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 66})`);
 
   legendG.append("text")
     .attr("x", 0)
@@ -215,7 +210,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 5;
       const row = Math.floor(i / 5);
-      return `translate(${col * 94},${18 + row * 22})`;
+      return `translate(${col * 118},${18 + row * 18})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
@@ -277,17 +272,17 @@ function updateFrequencySelection() {
         return 1;
       }
 
-      return frequency === selectedFrequencyGroup ? 1 : 0.22;
+      return frequency === selectedFrequencyGroup ? 1 : 0.25;
     });
 
   d3.selectAll(".freq-tile rect")
     .attr("stroke", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? "#000" : "white";
+      return frequency === selectedFrequencyGroup ? "#d100ff" : "#ffffff";
     })
     .attr("stroke-width", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? 3 : 2;
+      return frequency === selectedFrequencyGroup ? 2 : 1;
     });
 
   d3.selectAll(".treemap-legend-item")
@@ -304,7 +299,7 @@ function updateFrequencySelection() {
   d3.selectAll(".treemap-legend-item rect")
     .attr("stroke", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? "#000" : "#999";
+      return frequency === selectedFrequencyGroup ? "#d100ff" : "#999";
     })
     .attr("stroke-width", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
