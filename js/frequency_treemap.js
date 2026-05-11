@@ -2,7 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 54, right: 16, bottom: 92, left: 16 };
+const freqMargin = { top: 54, right: 16, bottom: 102, left: 16 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -49,10 +49,20 @@ function formatCount(value) {
   return d3.format(",")(value);
 }
 
-function readableTextColor(frequency) {
-  const darkGroups = new Set(["17-20", "21-28", "29-36", "37+"]);
-  return darkGroups.has(frequency) ? "white" : "#111";
-}
+const treemapTooltip = d3.select("body")
+  .append("div")
+  .attr("id", "treemap-tooltip")
+  .style("position", "absolute")
+  .style("display", "none")
+  .style("pointer-events", "none")
+  .style("background", "white")
+  .style("border", "1px solid #999")
+  .style("border-radius", "6px")
+  .style("padding", "8px 10px")
+  .style("font-size", "13px")
+  .style("line-height", "1.4")
+  .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
+  .style("z-index", "20");
 
 d3.csv("data/processed/frequency_distribution.csv").then(data => {
   data.forEach(d => {
@@ -66,9 +76,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .sort((a, b) => b.value - a.value);
 
   d3.treemap()
-    .tile(d3.treemapSquarify.ratio(1.15))
+    .tile(d3.treemapSquarify.ratio(1.2))
     .size([freqInnerWidth, freqInnerHeight])
-    .paddingInner(5)
+    .paddingInner(6)
     .paddingOuter(2)
     .round(true)(root);
 
@@ -80,6 +90,25 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("data-frequency", d => d.data.frequency)
     .attr("transform", d => `translate(${d.x0},${d.y0})`)
     .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+      d3.select(this)
+        .raise();
+
+      treemapTooltip
+        .style("display", "block")
+        .html(`
+          <strong>${d.data.frequency} estimated sweeps/month</strong><br>
+          ${formatCount(d.data.count)} street segments
+        `);
+    })
+    .on("mousemove", function(event) {
+      treemapTooltip
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY + 12}px`);
+    })
+    .on("mouseout", function() {
+      treemapTooltip.style("display", "none");
+    })
     .on("click", function(event, d) {
       if (selectedFrequencyGroup === d.data.frequency) {
         selectedFrequencyGroup = null;
@@ -97,44 +126,12 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   tiles.append("rect")
     .attr("width", d => d.x1 - d.x0)
     .attr("height", d => d.y1 - d.y0)
-    .attr("rx", 5)
-    .attr("ry", 5)
+    .attr("rx", 6)
+    .attr("ry", 6)
     .attr("fill", d => frequencyColor(d.data.frequency))
     .attr("stroke", "white")
     .attr("stroke-width", 2)
     .attr("opacity", 0.92);
-
-  tiles.append("title")
-    .text(d => `${d.data.frequency} estimated sweeps/month\n${formatCount(d.data.count)} street segments`);
-
-  tiles.append("text")
-    .attr("class", "treemap-frequency-label")
-    .attr("x", 9)
-    .attr("y", 23)
-    .attr("fill", d => readableTextColor(d.data.frequency))
-    .style("font-weight", "bold")
-    .style("font-size", "18px")
-    .text(d => d.data.frequency)
-    .style("display", d => {
-      const tileWidth = d.x1 - d.x0;
-      const tileHeight = d.y1 - d.y0;
-
-      return tileWidth > 62 && tileHeight > 44 ? "block" : "none";
-    });
-
-  tiles.append("text")
-    .attr("class", "treemap-count-label")
-    .attr("x", 9)
-    .attr("y", 46)
-    .attr("fill", d => readableTextColor(d.data.frequency))
-    .style("font-size", "14px")
-    .text(d => formatCount(d.data.count))
-    .style("display", d => {
-      const tileWidth = d.x1 - d.x0;
-      const tileHeight = d.y1 - d.y0;
-
-      return tileWidth > 76 && tileHeight > 64 ? "block" : "none";
-    });
 
   freqSvg.append("text")
     .attr("class", "chart-title")
@@ -145,12 +142,12 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 76})`);
+    .attr("transform", `translate(${freqMargin.left + 2},${freqHeight - 86})`);
 
   legendG.append("text")
     .attr("x", 0)
     .attr("y", 0)
-    .style("font-size", "11px")
+    .style("font-size", "12px")
     .style("font-weight", "bold")
     .text("Frequency groups");
 
@@ -163,9 +160,25 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 5;
       const row = Math.floor(i / 5);
-      return `translate(${col * 93},${16 + row * 20})`;
+      return `translate(${col * 94},${18 + row * 22})`;
     })
     .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+      treemapTooltip
+        .style("display", "block")
+        .html(`
+          <strong>${d.frequency} estimated sweeps/month</strong><br>
+          ${formatCount(d.count)} street segments
+        `);
+    })
+    .on("mousemove", function(event) {
+      treemapTooltip
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY + 12}px`);
+    })
+    .on("mouseout", function() {
+      treemapTooltip.style("display", "none");
+    })
     .on("click", function(event, d) {
       if (selectedFrequencyGroup === d.frequency) {
         selectedFrequencyGroup = null;
@@ -181,18 +194,19 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     });
 
   legendItems.append("rect")
-    .attr("width", 11)
-    .attr("height", 11)
+    .attr("width", 12)
+    .attr("height", 12)
     .attr("rx", 2)
     .attr("ry", 2)
     .attr("fill", d => frequencyColor(d.frequency))
     .attr("stroke", "#999")
-    .attr("stroke-width", 0.5);
+    .attr("stroke-width", 0.6);
 
   legendItems.append("text")
-    .attr("x", 16)
+    .attr("x", 18)
     .attr("y", 10)
-    .style("font-size", "10px")
+    .style("font-size", "10.5px")
+    .style("font-weight", "bold")
     .text(d => `${d.frequency}: ${formatCount(d.count)}`);
 
 }).catch(error => {
@@ -208,7 +222,7 @@ function updateFrequencySelection() {
         return 1;
       }
 
-      return frequency === selectedFrequencyGroup ? 1 : 0.25;
+      return frequency === selectedFrequencyGroup ? 1 : 0.22;
     });
 
   d3.selectAll(".freq-tile rect")
@@ -239,7 +253,7 @@ function updateFrequencySelection() {
     })
     .attr("stroke-width", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
-      return frequency === selectedFrequencyGroup ? 2 : 0.5;
+      return frequency === selectedFrequencyGroup ? 2 : 0.6;
     });
 }
 
