@@ -1,554 +1,478 @@
-const svg = d3.select("#map");
-const width = +svg.attr("width");
-const height = +svg.attr("height");
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Street Cleaning in San Francisco: Treemap Test</title>
 
-let selectedStreet = null;
-let activeMapMode = "none";
-let activeFrequencyGroup = null;
-let activeHeatmapCells = new Set();
-let activeHeatmapValue = 0;
-let activeCorridor = null;
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 
-function getStreetName(d) {
-  if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
-    return d.properties.schedule_details.corridor;
-  }
+    <style>
+      :root {
+        --page-bg: #fafafa;
+        --card-bg: #ffffff;
+        --text-main: #222222;
+        --text-muted: #555555;
+        --border-light: #dddddd;
+        --border-medium: #cccccc;
+        --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+        --shadow-medium: 0 2px 10px rgba(0, 0, 0, 0.09);
 
-  return (
-    d.properties.street ||
-    d.properties.street_name ||
-    d.properties.STREET ||
-    d.properties.STREETNAME ||
-    d.properties.fullname ||
-    d.properties.name ||
-    "Street segment"
-  );
-}
+        --blue-light: #eaf4fb;
+        --blue-mid: #9ccdea;
+        --blue-strong: #327abf;
+        --blue-dark: #08306b;
 
-function yesNo(value) {
-  return value === "1" ? "Yes" : "No";
-}
+        --radius-card: 10px;
+        --radius-pill: 999px;
+      }
 
-function valueOrUnknown(value) {
-  if (value === undefined || value === null || value === "") {
-    return "Unknown";
-  }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+        line-height: 1.4;
+        background: var(--page-bg);
+        color: var(--text-main);
+      }
 
-  return value;
-}
+      h1 {
+        margin-bottom: 6px;
+      }
 
-function getStreetCells(d) {
-  const details = d.properties.schedule_details;
+      h2 {
+        margin-top: 0;
+        margin-bottom: 8px;
+      }
 
-  if (!details || !details.heatmap_cells) {
-    return [];
-  }
+      .subtitle {
+        color: #444;
+        max-width: 1200px;
+        margin-bottom: 22px;
+      }
 
-  return details.heatmap_cells
-    .split(",")
-    .map(cell => cell.trim())
-    .filter(cell => cell !== "" && !cell.includes("Other"));
-}
+      .dashboard-layout {
+        display: grid;
+        grid-template-columns: 1000px 520px 320px;
+        gap: 24px;
+        align-items: start;
+      }
 
-function streetMatchesActiveHeatmap(d) {
-  if (activeHeatmapCells.size === 0) {
-    return true;
-  }
+      .map-column,
+      .charts-column,
+      .side-column {
+        min-width: 0;
+      }
 
-  const cells = getStreetCells(d);
-  return cells.some(cell => activeHeatmapCells.has(cell));
-}
+      .side-column {
+        position: sticky;
+        top: 24px;
+      }
 
-function streetMatchesActiveFrequency(d) {
-  if (!activeFrequencyGroup) {
-    return true;
-  }
+      svg {
+        background: white;
+        border: 1px solid var(--border-light);
+      }
 
-  return d.properties.frequency_group === activeFrequencyGroup;
-}
+      #map {
+        display: block;
+        background: #f8f8f8;
+      }
 
-function streetMatchesActiveCorridor(d) {
-  const details = d.properties.schedule_details;
+      .chart-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-card);
+        padding: 14px;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow-soft);
+      }
 
-  if (!details || !details.corridor) {
-    return false;
-  }
+      .chart-card h2 {
+        font-size: 20px;
+      }
 
-  return details.corridor === activeCorridor;
-}
+      .chart-card p {
+        color: #444;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
 
-function streetMatchesActiveFilters(d) {
-  return streetMatchesActiveFrequency(d) && streetMatchesActiveHeatmap(d);
-}
+      /* =========================================================
+         DETAIL PANEL
+         These classes are intentionally reusable so the final site
+         styling can be changed later without rewriting the JS.
+      ========================================================= */
 
-function updateLinkedViews(d) {
-  const details = d.properties.schedule_details;
+      #detail-panel {
+        width: 100%;
+        min-height: 260px;
+        padding: 18px;
+        border: 1px solid var(--border-medium);
+        border-radius: var(--radius-card);
+        background: var(--card-bg);
+        box-shadow: var(--shadow-medium);
+        box-sizing: border-box;
+      }
 
-  if (!details) {
-    return;
-  }
+      .detail-panel-title {
+        margin: 0 0 14px 0;
+        font-size: 22px;
+        line-height: 1.15;
+      }
 
-  if (window.highlightFrequencyGroup) {
-    window.highlightFrequencyGroup(details.frequency_group);
-  }
+      .detail-street-name {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.15;
+        font-weight: 800;
+      }
 
-  if (window.highlightHeatmapCells) {
-    window.highlightHeatmapCells(details.heatmap_cells);
-  }
+      .detail-limits {
+        margin: 6px 0 0 0;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.3;
+      }
 
-  if (window.highlightTopStreetBar) {
-    window.highlightTopStreetBar(details.corridor);
-  }
-}
+      .detail-meta {
+        margin: 8px 0 0 0;
+        color: #777;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
 
-function updateDetailPanel(d) {
-  const props = d.properties;
-  const details = props.schedule_details;
+      .detail-section {
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: 1px solid #e3e3e3;
+      }
 
-  if (!details) {
-    d3.select("#detail-panel").html(`
-      <h2>Selected Street</h2>
-      <p><strong>Street:</strong> ${getStreetName(d)}</p>
-      <p><strong>CNN:</strong> ${valueOrUnknown(props.cnn)}</p>
-      <p><strong>Frequency group:</strong> ${valueOrUnknown(props.frequency_group)}</p>
-      <p class="hint">No detailed schedule information was found for this street segment.</p>
-    `);
+      .detail-section:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+      }
 
-    return;
-  }
+      .detail-section-title {
+        margin: 0 0 9px 0;
+        font-size: 13px;
+        color: #555;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
 
-  d3.select("#detail-panel").html(`
-    <h2>Selected Street</h2>
+      .detail-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
 
-    <p><strong>Street:</strong> ${valueOrUnknown(details.corridor)}</p>
-    <p><strong>Limits:</strong> ${valueOrUnknown(details.limits)}</p>
-    <p><strong>CNN:</strong> ${valueOrUnknown(details.cnn)}</p>
+      .detail-stat {
+        border: 1px solid #dbe8f2;
+        background: #f5f9fc;
+        border-radius: 9px;
+        padding: 10px;
+        min-width: 0;
+      }
 
-    <hr>
+      .detail-stat-value {
+        display: block;
+        font-size: 19px;
+        line-height: 1.1;
+        font-weight: 800;
+        color: #111;
+      }
 
-    <p><strong>Estimated sweeps per month:</strong> ${valueOrUnknown(details.monthly_frequency)}</p>
-    <p><strong>Frequency group:</strong> ${valueOrUnknown(details.frequency_group)}</p>
-    <p><strong>Days cleaned:</strong> ${valueOrUnknown(details.days_cleaned)}</p>
-    <p><strong>Time ranges:</strong> ${valueOrUnknown(details.time_ranges)}</p>
+      .detail-stat-label {
+        display: block;
+        margin-top: 4px;
+        font-size: 11px;
+        color: #666;
+      }
 
-    <hr>
+      .weekday-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+      }
 
-    <p><strong>Schedule:</strong><br>${valueOrUnknown(details.schedule_summary)}</p>
-    <p><strong>Block side:</strong> ${valueOrUnknown(details.block_sides)}</p>
-    <p><strong>Side swept:</strong> ${valueOrUnknown(details.street_sides)}</p>
-    <p><strong>Swept on holidays:</strong> ${yesNo(details.holidays)}</p>
+      .weekday-chip {
+        text-align: center;
+        border-radius: 6px;
+        padding: 6px 0;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1px solid #d9d9d9;
+        color: #888;
+        background: #f3f3f3;
+      }
 
-    <p class="hint">
-      The charts are highlighting this street's matching patterns.
+      .weekday-chip.active {
+        color: white;
+        background: var(--blue-strong);
+        border-color: var(--blue-strong);
+      }
+
+      .time-badge {
+        display: block;
+        margin-top: 10px;
+        padding: 9px 10px;
+        border-radius: 8px;
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        font-size: 13px;
+      }
+
+      .detail-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .detail-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 4px 9px;
+        border-radius: var(--radius-pill);
+        border: 1px solid #d7d7d7;
+        background: #f7f7f7;
+        font-size: 12px;
+        font-weight: 700;
+        color: #333;
+      }
+
+      .detail-pill.blue {
+        background: var(--blue-light);
+        border-color: #c9e3f5;
+        color: #16456f;
+      }
+
+      .detail-pill.good {
+        background: #eef7ef;
+        border-color: #cce5cf;
+        color: #27632a;
+      }
+
+      .detail-pill.warning {
+        background: #fff7e6;
+        border-color: #f0d49b;
+        color: #7a5200;
+      }
+
+      .detail-row {
+        margin: 9px 0;
+        font-size: 13px;
+      }
+
+      .detail-row strong {
+        font-weight: 800;
+      }
+
+      .detail-summary {
+        margin: 8px 0 0 0;
+        color: #555;
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
+      .detail-footer-note {
+        margin: 14px 0 0 0;
+        padding-top: 12px;
+        border-top: 1px solid #e8e8e8;
+        color: #666;
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+
+      .detail-empty {
+        color: #555;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      #reset-selection {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      #reset-selection:hover {
+        background: #f1f1f1;
+      }
+
+      #map-tooltip {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 260px;
+        z-index: 10;
+      }
+
+      .overlay {
+        cursor: pointer;
+      }
+
+      .overlay.selected {
+        stroke: #000;
+        stroke-width: 4px;
+        opacity: 1;
+      }
+
+      .legend text {
+        font-size: 12px;
+      }
+
+      .chart-title {
+        font-weight: bold;
+        font-size: 15px;
+      }
+
+      .axis-label {
+        font-size: 12px;
+      }
+
+      .bar-label {
+        font-size: 10px;
+      }
+
+      .cell-label {
+        font-size: 10px;
+        pointer-events: none;
+      }
+
+      .top-street-label {
+        font-size: 10px;
+      }
+
+      .nav-link {
+        margin-top: 28px;
+      }
+
+      @media (max-width: 1500px) {
+        .dashboard-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .side-column {
+          position: static;
+        }
+
+        .charts-column {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .chart-card {
+          margin-bottom: 0;
+        }
+      }
+
+      @media (max-width: 900px) {
+        body {
+          margin: 18px;
+        }
+
+        .charts-column {
+          display: block;
+        }
+
+        #map {
+          width: 100%;
+          height: auto;
+        }
+
+        .detail-stat-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Street Cleaning in San Francisco: Patterns and Frequency</h1>
+
+    <p class="subtitle">
+      This test dashboard explores how street sweeping is distributed across San Francisco.
+      The map is the main view: users can zoom, hover, and click on street segments to inspect
+      individual sweeping schedules. The heatmap and frequency chart provide citywide context.
     </p>
-  `);
-}
 
-Promise.all([
-  d3.json("data/raw/active_streets.geojson"),
-  d3.csv("data/processed/cnn_totals.csv"),
-  d3.csv("data/processed/cnn_schedule_details.csv")
-]).then(([geoData, freqData, scheduleDetails]) => {
-
-  const freqMap = new Map();
-  const detailsMap = new Map();
-
-  freqData.forEach(d => {
-    freqMap.set(String(d.cnn), {
-      frequency_group: d.frequency_group
-    });
-  });
-
-  scheduleDetails.forEach(d => {
-    detailsMap.set(String(d.cnn), d);
-  });
-
-  geoData.features.forEach(feature => {
-    const cnn = String(feature.properties.cnn);
-    const freqMatch = freqMap.get(cnn);
-    const detailMatch = detailsMap.get(cnn);
-
-    if (freqMatch) {
-      feature.properties.frequency_group = freqMatch.frequency_group;
-    } else {
-      feature.properties.frequency_group = "No data";
-    }
-
-    if (detailMatch) {
-      feature.properties.schedule_details = detailMatch;
-    }
-  });
-
-  const projection = d3.geoMercator()
-    .fitSize([width, height], geoData);
-
-  const path = d3.geoPath().projection(projection);
-
-  const order = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7-8",
-    "9-12",
-    "13-16",
-    "17-20",
-    "21-28",
-    "29-36",
-    "37+"
-  ];
-
-  const color = d3.scaleOrdinal()
-    .domain(order)
-    .range([
-      "#f7fbff",
-      "#eaf4fb",
-      "#dceef8",
-      "#cfe8f7",
-      "#b6dbef",
-      "#9ccdea",
-      "#7fbbe2",
-      "#64a7d7",
-      "#4a91cb",
-      "#327abf",
-      "#1f66b2",
-      "#0f4f9e",
-      "#08306b"
-    ]);
-
-  const tooltip = d3.select("#map-tooltip");
-
-  const mapGroup = svg.append("g")
-    .attr("class", "map-group");
-
-  const zoom = d3.zoom()
-    .scaleExtent([1, 12])
-    .translateExtent([
-      [-width, -height],
-      [width * 2, height * 2]
-    ])
-    .on("zoom", function(event) {
-      mapGroup.attr("transform", event.transform);
-    });
-
-  svg.call(zoom);
-  svg.on("dblclick.zoom", null);
-
-  mapGroup.selectAll(".base")
-    .data(geoData.features)
-    .enter()
-    .append("path")
-    .attr("class", "base")
-    .attr("d", path)
-    .attr("fill", "none")
-    .attr("stroke", "#d9d9d9")
-    .attr("stroke-width", 0.8)
-    .attr("opacity", 0.7);
-
-  const streets = mapGroup.selectAll(".overlay")
-    .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
-    .enter()
-    .append("path")
-    .attr("class", "overlay")
-    .attr("d", path)
-    .attr("fill", "none")
-    .attr("stroke", d => color(d.properties.frequency_group))
-    .attr("stroke-width", 1.8)
-    .attr("stroke-linecap", "round")
-    .attr("opacity", 0.95)
-
-    .on("mouseover", function(event, d) {
-      d3.select(this)
-        .raise()
-        .attr("stroke", "#000")
-        .attr("stroke-width", 4)
-        .attr("opacity", 1);
-
-      const details = d.properties.schedule_details;
-
-      tooltip
-        .style("display", "block")
-        .html(`
-          <strong>${getStreetName(d)}</strong><br>
-          ${details && details.limits ? `${details.limits}<br>` : ""}
-          Estimated sweeps per month: ${details ? details.monthly_frequency : d.properties.frequency_group}<br>
-          Days: ${details ? details.days_cleaned : "Unknown"}<br>
-          Time: ${details ? details.time_ranges : "Unknown"}
-        `);
-    })
-
-    .on("mousemove", function(event) {
-      tooltip
-        .style("left", `${event.pageX + 12}px`)
-        .style("top", `${event.pageY + 12}px`);
-    })
-
-    .on("mouseout", function() {
-      applyMapStyles();
-      tooltip.style("display", "none");
-    })
-
-    .on("click", function(event, d) {
-      selectedStreet = d;
-      activeMapMode = "street";
-      activeFrequencyGroup = null;
-      activeHeatmapCells = new Set();
-      activeHeatmapValue = 0;
-      activeCorridor = null;
-
-      applyMapStyles();
-
-      d3.select(this).raise();
-
-      updateDetailPanel(d);
-      updateLinkedViews(d);
-    });
-
-  const legend = svg.append("g")
-    .attr("class", "legend")
-    .attr("transform", "translate(20,20)");
-
-  legend.selectAll("rect")
-    .data(order)
-    .enter()
-    .append("rect")
-    .attr("x", 0)
-    .attr("y", (d, i) => i * 20)
-    .attr("width", 14)
-    .attr("height", 14)
-    .attr("fill", d => color(d));
-
-  legend.selectAll("text")
-    .data(order)
-    .enter()
-    .append("text")
-    .attr("x", 20)
-    .attr("y", (d, i) => i * 20 + 11)
-    .text(d => d)
-    .style("font-size", "12px");
-
-  function applyMapStyles() {
-    streets
-      .classed("selected", d => activeMapMode === "street" && selectedStreet === d)
-      .attr("stroke", d => {
-        if (activeMapMode === "street" && selectedStreet === d) {
-          return "#000";
-        }
-
-        if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
-          return "#000";
-        }
-
-        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
-          return "#000";
-        }
-
-        return color(d.properties.frequency_group);
-      })
-      .attr("stroke-width", d => {
-        if (activeMapMode === "street" && selectedStreet === d) {
-          return 4;
-        }
-
-        if (activeMapMode === "corridor" && streetMatchesActiveCorridor(d)) {
-          return 3.5;
-        }
-
-        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
-          return 3.5;
-        }
-
-        if (activeMapMode === "none") {
-          return 1.8;
-        }
-
-        return 1.2;
-      })
-      .attr("opacity", d => {
-        if (activeMapMode === "none") {
-          return 0.95;
-        }
-
-        if (activeMapMode === "street") {
-          return selectedStreet === d ? 1 : 0.25;
-        }
-
-        if (activeMapMode === "corridor") {
-          return streetMatchesActiveCorridor(d) ? 1 : 0.12;
-        }
-
-        if (activeMapMode === "filters") {
-          return streetMatchesActiveFilters(d) ? 1 : 0.12;
-        }
-
-        return 0.95;
-      });
-  }
-
-  function updateFilterPanel() {
-    const hasFrequency = activeFrequencyGroup !== null;
-    const hasHeatmap = activeHeatmapCells.size > 0;
-
-    if (!hasFrequency && !hasHeatmap) {
-      activeMapMode = "none";
-      applyMapStyles();
-
-      d3.select("#detail-panel").html(`
-        <h2>Selected Street</h2>
-        <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
-      `);
-
-      return;
-    }
-
-    activeMapMode = "filters";
-
-    const matchCount = streets
-      .data()
-      .filter(d => streetMatchesActiveFilters(d))
-      .length;
-
-    applyMapStyles();
-
-    const selectedCellsText = hasHeatmap
-      ? Array.from(activeHeatmapCells).join(", ")
-      : "None";
-
-    const frequencyText = hasFrequency
-      ? activeFrequencyGroup
-      : "Any";
-
-    d3.select("#detail-panel").html(`
-      <h2>Combined Selection</h2>
-      <p><strong>Frequency range:</strong> ${frequencyText}</p>
-      <p><strong>Selected heatmap cells:</strong> ${selectedCellsText}</p>
-      <p><strong>Matching street segments highlighted:</strong> ${matchCount}</p>
-      ${hasHeatmap ? `<p><strong>Combined heatmap value:</strong> ${activeHeatmapValue} estimated monthly scheduled occurrences</p>` : ""}
-      <p class="hint">
-        The map highlights streets matching the selected frequency range and at least one selected heatmap cell.
-      </p>
-    `);
-  }
-
-  window.setFrequencySelection = function(frequencyGroup) {
-    selectedStreet = null;
-    activeCorridor = null;
-    activeFrequencyGroup = frequencyGroup;
-
-    if (window.resetTopStreetHighlight) {
-      window.resetTopStreetHighlight();
-    }
-
-    updateFilterPanel();
-  };
-
-  window.setHeatmapSelection = function(heatmapCells, heatmapValue) {
-    selectedStreet = null;
-    activeCorridor = null;
-    activeHeatmapValue = heatmapValue || 0;
-
-    activeHeatmapCells = new Set(
-      heatmapCells
-        .split(",")
-        .map(d => d.trim())
-        .filter(d => d !== "" && !d.includes("Other"))
-    );
-
-    if (window.resetTopStreetHighlight) {
-      window.resetTopStreetHighlight();
-    }
-
-    updateFilterPanel();
-  };
-
-  window.highlightMapByCorridor = function(corridor, summary) {
-    selectedStreet = null;
-    activeMapMode = "corridor";
-    activeFrequencyGroup = null;
-    activeHeatmapCells = new Set();
-    activeHeatmapValue = 0;
-    activeCorridor = corridor;
-
-    if (window.resetFrequencyHighlight) {
-      window.resetFrequencyHighlight();
-    }
-
-    if (window.resetHeatmapHighlight) {
-      window.resetHeatmapHighlight();
-    }
-
-    const matchingSegments = streets
-      .data()
-      .filter(d => {
-        const details = d.properties.schedule_details;
-        return details && details.corridor === corridor;
-      });
-
-    const segmentCount = matchingSegments.length;
-    const totalFrequency = summary && summary.total_frequency
-      ? summary.total_frequency
-      : d3.sum(matchingSegments, d => +d.properties.schedule_details.monthly_frequency || 0);
-
-    const averageFrequency = segmentCount > 0
-      ? (totalFrequency / segmentCount).toFixed(1)
-      : "Unknown";
-
-    applyMapStyles();
-
-    streets
-      .filter(d => {
-        const details = d.properties.schedule_details;
-        return details && details.corridor === corridor;
-      })
-      .raise();
-
-    d3.select("#detail-panel").html(`
-      <h2>Full Street Selection</h2>
-      <p><strong>Street:</strong> ${corridor}</p>
-      <p><strong>Total estimated sweeps per month:</strong> ${totalFrequency}</p>
-      <p><strong>Street segments highlighted:</strong> ${segmentCount}</p>
-      <p><strong>Average per segment:</strong> ${averageFrequency}</p>
-      <p class="hint">
-        This selection groups all mapped street segments with the same street name.
-        Click an individual street segment to return to segment-level details.
-      </p>
-    `);
-  };
-
-  window.resetDashboardSelection = function() {
-    selectedStreet = null;
-    activeMapMode = "none";
-    activeFrequencyGroup = null;
-    activeHeatmapCells = new Set();
-    activeHeatmapValue = 0;
-    activeCorridor = null;
-
-    applyMapStyles();
-
-    d3.select("#detail-panel").html(`
-      <h2>Selected Street</h2>
-      <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
-    `);
-
-    if (window.resetFrequencyHighlight) {
-      window.resetFrequencyHighlight();
-    }
-
-    if (window.resetHeatmapHighlight) {
-      window.resetHeatmapHighlight();
-    }
-
-    if (window.resetTopStreetHighlight) {
-      window.resetTopStreetHighlight();
-    }
-  };
-
-  d3.select("#reset-selection").on("click", function() {
-    window.resetDashboardSelection();
-  });
-
-}).catch(error => {
-  console.error("Error loading map data:", error);
-});
+    <main class="dashboard-layout">
+      <section class="map-column">
+        <h2>Interactive Street Sweeping Map</h2>
+        <p class="subtitle">
+          Streets are colored by estimated sweeps per month. Hover for a quick preview,
+          click for full schedule details, and zoom or pan to inspect smaller areas.
+        </p>
+
+        <svg id="map" width="1000" height="1260"></svg>
+      </section>
+
+      <section class="charts-column">
+        <div class="chart-card">
+          <h2>Weekday and Time Pattern</h2>
+          <p>
+            Click a heatmap cell to highlight streets swept during that weekday and time bucket.
+          </p>
+          <svg id="heatmap" width="500" height="360"></svg>
+        </div>
+
+        <div class="chart-card">
+          <h2>Frequency Treemap</h2>
+          <p>
+            Rectangle size shows how many street segments fall into each estimated sweeps-per-month range.
+            Click a rectangle to highlight matching streets on the map.
+          </p>
+          <svg id="chart" width="500" height="360"></svg>
+        </div>
+
+        <div class="chart-card">
+          <h2>Most Sweeping Activity by Street</h2>
+          <p>
+            This chart groups all segments with the same street name and shows which streets
+            have the most estimated sweeping activity overall. Click a bar to highlight that full
+            street on the map.
+          </p>
+          <svg id="top-streets" width="500" height="360"></svg>
+        </div>
+      </section>
+
+      <aside class="side-column">
+        <div id="detail-panel">
+          <h2 class="detail-panel-title">Selected Street</h2>
+          <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
+        </div>
+
+        <button id="reset-selection" type="button">
+          Reset selection
+        </button>
+      </aside>
+    </main>
+
+    <div id="map-tooltip"></div>
+
+    <p class="nav-link"><a href="index.html">Back to index</a></p>
+
+    <script src="js/map.js"></script>
+    <script src="js/heatmap.js"></script>
+    <script src="js/frequency_treemap.js"></script>
+    <script src="js/top_streets.js"></script>
+  </body>
+</html>
