@@ -62,26 +62,6 @@ function tileHeight(d) {
   return d.y1 - d.y0;
 }
 
-function shouldCenterLabel(d) {
-  return tileWidth(d) < 86 || tileHeight(d) < 34;
-}
-
-function labelX(d) {
-  return shouldCenterLabel(d) ? tileWidth(d) / 2 : 8;
-}
-
-function labelY(d) {
-  return shouldCenterLabel(d) ? tileHeight(d) / 2 : 10;
-}
-
-function labelAnchor(d) {
-  return shouldCenterLabel(d) ? "middle" : "start";
-}
-
-function labelBaseline(d) {
-  return shouldCenterLabel(d) ? "middle" : "hanging";
-}
-
 function labelFontSize(d) {
   const w = tileWidth(d);
   const h = tileHeight(d);
@@ -89,9 +69,13 @@ function labelFontSize(d) {
   if (w < 28 || h < 18) return "7px";
   if (w < 42 || h < 24) return "8px";
   if (w < 58 || h < 30) return "9px";
-  if (w < 80 || h < 36) return "11px";
-  if (w < 120 || h < 50) return "13px";
+  if (w < 80 || h < 38) return "11px";
+  if (w < 120 || h < 55) return "13px";
   return "18px";
+}
+
+function boxLabelText(d) {
+  return `${d.data.frequency}x`;
 }
 
 const treemapTooltip = d3.select("body")
@@ -145,7 +129,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
       treemapTooltip
         .style("display", "block")
         .html(`
-          <strong>${d.data.frequency} estimated sweeps/month</strong><br>
+          <strong>${d.data.frequency} times/month</strong><br>
           ${formatCount(d.data.count)} street segments
         `);
     })
@@ -193,16 +177,16 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   tiles.append("text")
     .attr("class", "treemap-box-label")
-    .attr("x", d => labelX(d))
-    .attr("y", d => labelY(d))
-    .attr("text-anchor", d => labelAnchor(d))
-    .attr("dominant-baseline", d => labelBaseline(d))
+    .attr("x", d => tileWidth(d) / 2)
+    .attr("y", d => tileHeight(d) / 2)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "middle")
     .attr("clip-path", (d, i) => `url(#treemap-label-clip-${i})`)
     .attr("fill", d => readableTextColor(d.data.frequency))
     .style("font-weight", "bold")
     .style("font-size", d => labelFontSize(d))
     .style("pointer-events", "none")
-    .text(d => d.data.frequency);
+    .text(d => boxLabelText(d));
 
   freqSvg.append("text")
     .attr("class", "chart-title")
@@ -238,7 +222,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
       treemapTooltip
         .style("display", "block")
         .html(`
-          <strong>${d.frequency} estimated sweeps/month</strong><br>
+          <strong>${d.frequency} times/month</strong><br>
           ${formatCount(d.count)} street segments
         `);
     })
