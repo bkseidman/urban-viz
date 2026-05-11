@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Street Cleaning in San Francisco: Treemap Test</title>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+        line-height: 1.4;
+        background: #fafafa;
+        color: #222;
+      }
+
+      h1 {
+        margin-bottom: 6px;
+      }
+
+      h2 {
+        margin-top: 0;
+        margin-bottom: 8px;
+      }
+
+      .subtitle {
+        color: #444;
+        max-width: 1200px;
+        margin-bottom: 22px;
+      }
+
+      .dashboard-layout {
+        display: grid;
+        grid-template-columns: 1000px 520px 320px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .map-column,
+      .charts-column,
+      .side-column {
+        min-width: 0;
+      }
+
+      svg {
+        background: white;
+        border: 1px solid #ddd;
+      }
+
+      #map {
+        display: block;
+        background: #f8f8f8;
+      }
+
+      .chart-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      .chart-card h2 {
+        font-size: 20px;
+      }
+
+      .chart-card p {
+        color: #444;
+        margin-top: 4px;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+
+      #detail-panel {
+        width: 100%;
+        min-height: 260px;
+        padding: 18px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+      }
+
+      #detail-panel h2 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        font-size: 20px;
+      }
+
+      #detail-panel p {
+        margin: 8px 0;
+      }
+
+      #detail-panel .hint {
+        color: #555;
+      }
+
+      #reset-selection {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      #reset-selection:hover {
+        background: #f1f1f1;
+      }
+
+      #map-tooltip {
+        position: absolute;
+        display: none;
+        pointer-events: none;
+        background: white;
+        border: 1px solid #999;
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 260px;
+        z-index: 10;
+      }
+
+      .overlay {
+        cursor: pointer;
+      }
+
+      .overlay.selected {
+        stroke: #000;
+        stroke-width: 4px;
+        opacity: 1;
+      }
+
+      .legend text {
+        font-size: 12px;
+      }
+
+      .chart-title {
+        font-weight: bold;
+        font-size: 15px;
+      }
+
+      .axis-label {
+        font-size: 12px;
+      }
+
+      .bar-label {
+        font-size: 10px;
+      }
+
+      .cell-label {
+        font-size: 10px;
+        pointer-events: none;
+      }
+
+      .top-street-label {
+        font-size: 10px;
+      }
+
+      .nav-link {
+        margin-top: 28px;
+      }
+
+      @media (max-width: 1500px) {
+        .dashboard-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .charts-column {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 18px;
+        }
+
+        .chart-card {
+          margin-bottom: 0;
+        }
+      }
+
+      @media (max-width: 900px) {
+        body {
+          margin: 18px;
+        }
+
+        .charts-column {
+          display: block;
+        }
+
+        #map {
+          width: 100%;
+          height: auto;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Street Cleaning in San Francisco: Patterns and Frequency</h1>
+
+    <p class="subtitle">
+      This test dashboard explores how street sweeping is distributed across San Francisco.
+      The map is the main view: users can zoom, hover, and click on street segments to inspect
+      individual sweeping schedules. The heatmap and frequency chart provide citywide context.
+    </p>
+
+    <main class="dashboard-layout">
+      <section class="map-column">
+        <h2>Interactive Street Sweeping Map</h2>
+        <p class="subtitle">
+          Streets are colored by estimated sweeps per month. Hover for a quick preview,
+          click for full schedule details, and zoom or pan to inspect smaller areas.
+        </p>
+
+        <svg id="map" width="1000" height="1260"></svg>
+      </section>
+
+      <section class="charts-column">
+        <div class="chart-card">
+          <h2>Weekday and Time Pattern</h2>
+          <p>
+            Click a heatmap cell to highlight streets swept during that weekday and time bucket.
+          </p>
+          <svg id="heatmap" width="500" height="360"></svg>
+        </div>
+
+        <div class="chart-card">
+          <h2>Frequency Treemap</h2>
+          <p>
+            Rectangle size shows how many street segments fall into each estimated sweeps-per-month range.
+            Click a rectangle to highlight matching streets on the map.
+          </p>
+          <svg id="chart" width="500" height="360"></svg>
+        </div>
+
+        <div class="chart-card">
+          <h2>Most Sweeping Activity by Street</h2>
+          <p>
+            This chart groups all segments with the same street name and shows which streets
+            have the most estimated sweeping activity overall. Click a bar to highlight that full
+            street on the map.
+          </p>
+          <svg id="top-streets" width="500" height="360"></svg>
+        </div>
+      </section>
+
+      <aside class="side-column">
+        <div id="detail-panel">
+          <h2>Selected Street</h2>
+          <p class="hint">Click a colored street segment to view its sweeping schedule.</p>
+        </div>
+
+        <button id="reset-selection" type="button">
+          Reset selection
+        </button>
+      </aside>
+    </main>
+
+    <div id="map-tooltip"></div>
+
+    <p class="nav-link"><a href="index.html">Back to index</a></p>
+
+    <script src="js/map.js"></script>
+    <script src="js/heatmap.js"></script>
+    <script src="js/frequency_treemap.js"></script>
+    <script src="js/top_streets.js"></script>
+  </body>
+</html>
