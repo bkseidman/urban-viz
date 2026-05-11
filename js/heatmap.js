@@ -2,7 +2,7 @@ const heatSvg = d3.select("#heatmap");
 const heatWidth = +heatSvg.attr("width");
 const heatHeight = +heatSvg.attr("height");
 
-const HEATMAP_HIGHLIGHT_COLOR = "#e60000";
+const HEATMAP_HIGHLIGHT_COLOR = "#8d5aa7";
 
 const heatMargin = { top: 60, right: 22, bottom: 72, left: 110 };
 const heatInnerWidth = heatWidth - heatMargin.left - heatMargin.right;
@@ -44,14 +44,15 @@ const heatmapTooltip = d3.select("body")
   .style("position", "absolute")
   .style("display", "none")
   .style("pointer-events", "none")
-  .style("background", "white")
-  .style("border", "1px solid #999")
-  .style("border-radius", "6px")
+  .style("background", "rgba(255, 251, 244, 0.98)")
+  .style("border", "1px solid #d8cdb8")
+  .style("border-radius", "10px")
   .style("padding", "8px 10px")
   .style("font-size", "13px")
   .style("line-height", "1.4")
-  .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
-  .style("z-index", "20");
+  .style("box-shadow", "0 10px 22px rgba(36, 49, 60, 0.14)")
+  .style("z-index", "20")
+  .style("color", "#1f3140");
 
 function cellKey(weekday, timeBucket) {
   return `${weekday}|${timeBucket}`;
@@ -98,7 +99,7 @@ function updateHeatmapSelection() {
       const cell = d3.select(this).attr("data-cell");
 
       if (selectedHeatmapCells.size === 0) {
-        return 0.9;
+        return 0.92;
       }
 
       return selectedHeatmapCells.has(cell) ? 1 : 0.25;
@@ -113,11 +114,11 @@ function updateHeatmapSelection() {
     });
 
   d3.selectAll(".weekday-axis-label")
-    .attr("fill", d => columnIsActive(d) ? HEATMAP_HIGHLIGHT_COLOR : "#222")
+    .attr("fill", d => columnIsActive(d) ? HEATMAP_HIGHLIGHT_COLOR : "#123b52")
     .style("font-weight", d => columnIsActive(d) ? "700" : "400");
 
   d3.selectAll(".time-axis-label")
-    .attr("fill", d => rowIsActive(d) ? HEATMAP_HIGHLIGHT_COLOR : "#222")
+    .attr("fill", d => rowIsActive(d) ? HEATMAP_HIGHLIGHT_COLOR : "#123b52")
     .style("font-weight", d => rowIsActive(d) ? "700" : "400");
 }
 
@@ -186,7 +187,15 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
 
   const color = d3.scaleSequential()
     .domain([0, d3.max(data, d => d.count)])
-    .interpolator(d3.interpolateBlues);
+    .interpolator(
+      d3.interpolateRgbBasis([
+        "#f7f3ea",
+        "#dce9ef",
+        "#a6c5d6",
+        "#5e8fb2",
+        "#123b52"
+      ])
+    );
 
   const xAxisG = heatG.append("g")
     .attr("transform", `translate(0,${heatInnerHeight})`)
@@ -257,7 +266,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("width", x.bandwidth())
     .attr("height", y.bandwidth())
     .attr("fill", d => color(d.count))
-    .attr("opacity", 0.9)
+    .attr("opacity", 0.92)
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
       heatmapTooltip
