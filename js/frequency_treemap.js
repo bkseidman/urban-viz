@@ -2,7 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 42, right: 10, bottom: 88, left: 10 };
+const freqMargin = { top: 42, right: 10, bottom: 64, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -208,7 +208,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 72})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 47})`);
 
   legendG.append("text")
     .attr("x", 0)
@@ -225,9 +225,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("class", "treemap-legend-item")
     .attr("data-frequency", d => d.frequency)
     .attr("transform", function(d, i) {
-      const col = i % 5;
-      const row = Math.floor(i / 5);
-      return `translate(${col * 118},${17 + row * 17})`;
+      const col = i % 7;
+      const row = Math.floor(i / 7);
+      return `translate(${col * 84},${16 + row * 18})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
@@ -261,8 +261,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     });
 
   legendItems.append("rect")
-    .attr("width", 11)
-    .attr("height", 11)
+    .attr("width", 10)
+    .attr("height", 10)
     .attr("rx", 2)
     .attr("ry", 2)
     .attr("fill", d => frequencyColor(d.frequency))
@@ -270,9 +270,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke-width", 0.6);
 
   legendItems.append("text")
-    .attr("x", 17)
-    .attr("y", 9.5)
-    .style("font-size", "10px")
+    .attr("x", 15)
+    .attr("y", 8.8)
+    .style("font-size", "9.5px")
     .style("font-weight", "bold")
     .style("fill", "#123b52")
     .text(d => `${d.frequency}: ${formatCount(d.count)}`);
