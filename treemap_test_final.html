@@ -15,23 +15,11 @@
       :root {
         --paper: #f4ecd8;
         --paper-soft: #fbf7ed;
-        --paper-panel: #f8f1df;
         --ink: #123b52;
         --ink-soft: #35586d;
         --text-main: #1f3140;
         --text-muted: #5d6875;
-
-        --blue-1: #eef5f7;
-        --blue-2: #d7e8ef;
-        --blue-3: #b8d3df;
-        --blue-4: #8fb8c8;
-        --blue-5: #5d93ab;
-        --blue-6: #2f6f92;
-
-        --lavender: #c9b6d8;
-        --lavender-soft: #efe6f3;
         --highlight: #8d5aa7;
-
         --border: #d8cdb8;
         --border-soft: #e7ddc9;
         --shadow-soft: 0 10px 24px rgba(36, 49, 60, 0.08);
@@ -42,16 +30,13 @@
         --radius-pill: 999px;
 
         --dashboard-width: 1700px;
-
         --side-width: 320px;
         --map-card-width: 700px;
         --map-svg-width: 672px;
         --map-svg-height: 744px;
-
         --charts-width: 640px;
         --chart-svg-width: 620px;
         --chart-svg-height: 245px;
-
         --treemap-svg-height: 405px;
         --top-section-height: 842px;
 
@@ -110,7 +95,6 @@
         text-transform: uppercase;
         font-weight: 700;
         color: var(--highlight);
-        font-family: var(--font-body);
       }
 
       h1 {
@@ -137,7 +121,6 @@
         font-size: 15px;
         color: var(--text-muted);
         max-width: 980px;
-        font-family: var(--font-body);
       }
 
       .dashboard-layout {
@@ -245,7 +228,6 @@
         font-size: 12.5px;
         line-height: 1.32;
         max-width: 92%;
-        font-family: var(--font-body);
       }
 
       .info-jump {
@@ -255,7 +237,6 @@
         border: 1px solid rgba(141, 90, 167, 0.38);
         background: rgba(201, 182, 216, 0.18);
         color: var(--highlight);
-        font-family: var(--font-body);
         font-size: 12px;
         font-weight: 800;
         line-height: 1;
@@ -269,6 +250,85 @@
       .info-jump:hover {
         background: rgba(201, 182, 216, 0.34);
         border-color: rgba(141, 90, 167, 0.58);
+      }
+
+      .heatmap-title-row {
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .timeline-control {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 285px;
+      }
+
+      #heatmap-play {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid rgba(141, 90, 167, 0.34);
+        background: rgba(201, 182, 216, 0.20);
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-light);
+      }
+
+      #heatmap-play:hover {
+        background: rgba(201, 182, 216, 0.34);
+      }
+
+      #heatmap-play.playing {
+        color: #fffaf2;
+        background: var(--highlight);
+        border-color: var(--highlight);
+      }
+
+      .timeline-track {
+        position: relative;
+        width: 118px;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(18, 59, 82, 0.18);
+        overflow: visible;
+      }
+
+      .timeline-progress {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 4px;
+        width: 0%;
+        border-radius: 999px;
+        background: var(--highlight);
+      }
+
+      .timeline-dot {
+        position: absolute;
+        top: 50%;
+        left: 0%;
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        background: var(--highlight);
+        border: 2px solid #fffaf2;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 6px rgba(36, 49, 60, 0.22);
+      }
+
+      #timeline-label {
+        min-width: 88px;
+        color: var(--ink-soft);
+        font-size: 11.5px;
+        font-weight: 800;
+        white-space: nowrap;
       }
 
       svg {
@@ -336,7 +396,6 @@
         letter-spacing: 0.12em;
         text-transform: uppercase;
         font-weight: 700;
-        font-family: var(--font-body);
       }
 
       .detail-section {
@@ -358,7 +417,6 @@
         font-weight: 800;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        font-family: var(--font-body);
       }
 
       .detail-stat-grid {
@@ -406,7 +464,6 @@
         border: 1px solid var(--border);
         color: #7a7d83;
         background: rgba(255,255,255,0.55);
-        font-family: var(--font-body);
       }
 
       .weekday-chip.active {
@@ -444,7 +501,6 @@
         font-size: 11px;
         font-weight: 700;
         color: var(--ink-soft);
-        font-family: var(--font-body);
       }
 
       .detail-pill.blue {
@@ -510,7 +566,6 @@
         cursor: pointer;
         font-size: 14px;
         font-weight: 800;
-        font-family: var(--font-body);
         box-shadow: var(--shadow-light);
         transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
       }
@@ -535,7 +590,6 @@
         max-width: 270px;
         z-index: 20;
         color: var(--text-main);
-        font-family: var(--font-body);
       }
 
       .overlay {
@@ -561,10 +615,6 @@
         font-family: var(--font-body);
       }
 
-      .legend text {
-        font-size: 12px;
-      }
-
       .chart-title {
         fill: var(--ink);
         font-family: var(--font-display);
@@ -577,10 +627,6 @@
         font-size: 10px;
       }
 
-      .bar-label {
-        font-size: 8.5px;
-      }
-
       .cell-label {
         font-size: 8px;
         pointer-events: none;
@@ -589,8 +635,6 @@
       .top-street-label {
         font-size: 8.5px;
       }
-
-      /* information panel */
 
       .info-card-header {
         display: grid;
@@ -632,7 +676,6 @@
         color: var(--ink);
         border-radius: 999px;
         padding: 6px 10px;
-        font-family: var(--font-body);
         font-size: 11.5px;
         font-weight: 800;
         cursor: pointer;
@@ -885,10 +928,9 @@
                     especially compared with weekends and later-day windows.
                   </p>
                   <p>
-                    This matters because the real-world experience of street cleaning is time-based: people are not
-                    just asking “where is sweeping?” but “when do I have to move my car?” SFMTA materials separate
-                    overnight street cleaning from weekday daytime sweeping, and this heatmap makes those schedule
-                    blocks visible at once.
+                    The play button animates those same weekday/time buckets across the map. It is not showing live
+                    sweeper locations; it is a rough scheduled-pattern animation that helps reveal how sweeping activity
+                    moves through the city over the week.
                   </p>
                 </div>
 
@@ -899,7 +941,7 @@
                   </div>
                   <div class="info-callout">
                     <p class="info-callout-label">Interaction</p>
-                    <p>Click one cell for a specific weekday/time window, a weekday label for a full column, or a time label for a full row.</p>
+                    <p>Click one cell, a weekday label, or a time label. Press play to animate each weekday/time window across the map.</p>
                   </div>
                 </div>
               </div>
@@ -912,8 +954,7 @@
                   <p>
                     Each rectangle is a sweeps-per-month group, and its area shows how many street segments fall into
                     that group. The biggest groups in this dataset are the mid-frequency categories, especially 4x
-                    and 7–8x per month. That means a large share of mapped street segments are cleaned roughly weekly
-                    or around twice weekly.
+                    and 7–8x per month.
                   </p>
                   <p>
                     The smaller high-frequency groups are still important. They cover fewer segments, but they represent
@@ -969,13 +1010,27 @@
         <section class="charts-column">
           <div class="chart-card">
             <div class="card-heading">
-              <div class="card-title-row">
+              <div class="card-title-row heatmap-title-row">
                 <h2>Weekday and Time Pattern</h2>
                 <button class="info-jump" type="button" data-info-target="heatmap" title="Show heatmap explanation">i</button>
+
+                <div class="timeline-control">
+                  <button id="heatmap-play" type="button" aria-label="Play weekly sweeping animation">
+                    ▶
+                  </button>
+
+                  <div class="timeline-track" aria-hidden="true">
+                    <div class="timeline-progress" id="timeline-progress"></div>
+                    <div class="timeline-dot" id="timeline-dot"></div>
+                  </div>
+
+                  <span id="timeline-label">Mon · 12–2 AM</span>
+                </div>
               </div>
+
               <p>
                 Click a cell for a single weekday/time combination, a weekday label for a full column,
-                or a time label for a full row.
+                or a time label for a full row. Press play to animate the weekly schedule across the map.
               </p>
             </div>
 
