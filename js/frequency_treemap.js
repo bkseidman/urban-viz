@@ -2,7 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 42, right: 10, bottom: 64, left: 10 };
+const freqMargin = { top: 42, right: 10, bottom: 62, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -64,6 +64,10 @@ function tileHeight(d) {
 
 function boxLabelText(d) {
   return `${d.data.frequency}x`;
+}
+
+function legendLabelText(d) {
+  return `${d.frequency}x`;
 }
 
 function labelFontSize(d) {
@@ -208,12 +212,12 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 47})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 42})`);
 
   legendG.append("text")
     .attr("x", 0)
     .attr("y", 0)
-    .style("font-size", "11px")
+    .style("font-size", "10.5px")
     .style("font-weight", "bold")
     .style("fill", "#123b52")
     .text("Frequency groups");
@@ -227,7 +231,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 7;
       const row = Math.floor(i / 7);
-      return `translate(${col * 84},${16 + row * 18})`;
+      return `translate(${col * 82},${14 + row * 17})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
@@ -275,7 +279,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .style("font-size", "9.5px")
     .style("font-weight", "bold")
     .style("fill", "#123b52")
-    .text(d => `${d.frequency}: ${formatCount(d.count)}`);
+    .text(d => legendLabelText(d));
 
 }).catch(error => {
   console.error("Error loading frequency treemap data:", error);
