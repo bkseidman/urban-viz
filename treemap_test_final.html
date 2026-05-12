@@ -7,6 +7,7 @@
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -44,8 +45,6 @@
         --dashboard-width: 1700px;
 
         --side-width: 320px;
-
-        /* Map card column stays 700px, but SVG is smaller so it fits inside padding */
         --map-card-width: 700px;
         --map-svg-width: 672px;
         --map-svg-height: 744px;
@@ -55,11 +54,6 @@
         --chart-svg-height: 245px;
 
         --treemap-svg-height: 405px;
-
-        /*
-          Heatmap card 324px + gap 18px + treemap card 500px = 842px.
-          The map card uses the same height so the bottom lines up.
-        */
         --top-section-height: 842px;
 
         --font-display: "Fraunces", Georgia, serif;
@@ -149,10 +143,17 @@
 
       .dashboard-layout {
         display: grid;
-        grid-template-columns: var(--side-width) var(--map-card-width) var(--charts-width);
+        grid-template-columns: calc(var(--side-width) + 20px + var(--map-card-width)) var(--charts-width);
         gap: 20px;
         align-items: start;
         width: var(--dashboard-width);
+      }
+
+      .left-workspace {
+        display: grid;
+        grid-template-columns: var(--side-width) var(--map-card-width);
+        gap: 20px;
+        align-items: start;
       }
 
       .side-column {
@@ -168,6 +169,7 @@
 
       .map-card,
       .chart-card,
+      .info-card,
       #detail-panel {
         position: relative;
         background: var(--paper-soft);
@@ -178,6 +180,7 @@
 
       .map-card::before,
       .chart-card::before,
+      .info-card::before,
       #detail-panel::before {
         content: "";
         position: absolute;
@@ -208,10 +211,23 @@
         height: auto;
       }
 
+      .info-card {
+        grid-column: 1 / span 2;
+        min-height: 324px;
+        padding: 18px;
+        overflow: hidden;
+      }
+
       .card-heading {
         margin-bottom: 10px;
         padding: 8px 4px 10px 4px;
         border-bottom: 1px solid var(--border-soft);
+      }
+
+      .card-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
 
       .card-heading h2 {
@@ -231,6 +247,29 @@
         line-height: 1.32;
         max-width: 92%;
         font-family: var(--font-body);
+      }
+
+      .info-jump {
+        width: 21px;
+        height: 21px;
+        border-radius: 999px;
+        border: 1px solid rgba(141, 90, 167, 0.38);
+        background: rgba(201, 182, 216, 0.18);
+        color: var(--highlight);
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-2px);
+      }
+
+      .info-jump:hover {
+        background: rgba(201, 182, 216, 0.34);
+        border-color: rgba(141, 90, 167, 0.58);
       }
 
       svg {
@@ -554,6 +593,153 @@
         font-size: 8.5px;
       }
 
+      /* information panel */
+
+      .info-card-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: start;
+        padding: 8px 4px 12px 4px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+
+      .info-card h2 {
+        margin: 0;
+        font-family: var(--font-display);
+        color: var(--ink);
+        font-size: 24px;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+      }
+
+      .info-card .info-subtitle {
+        margin: 5px 0 0 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.35;
+        max-width: 660px;
+      }
+
+      .info-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        justify-content: flex-end;
+        max-width: 480px;
+      }
+
+      .info-tab {
+        border: 1px solid rgba(141, 90, 167, 0.28);
+        background: rgba(255, 255, 255, 0.54);
+        color: var(--ink);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-family: var(--font-body);
+        font-size: 11.5px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .info-tab:hover {
+        background: rgba(201, 182, 216, 0.20);
+      }
+
+      .info-tab.active {
+        color: #fffaf2;
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+
+      .info-content {
+        display: none;
+        padding: 16px 4px 2px 4px;
+      }
+
+      .info-content.active {
+        display: block;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+      }
+
+      .info-main h3 {
+        margin: 0 0 8px 0;
+        font-family: var(--font-display);
+        color: var(--ink);
+        font-size: 22px;
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+      }
+
+      .info-main p {
+        margin: 0 0 9px 0;
+        font-size: 13.5px;
+        line-height: 1.45;
+        color: var(--text-main);
+      }
+
+      .info-callouts {
+        display: grid;
+        gap: 10px;
+      }
+
+      .info-callout {
+        border: 1px solid rgba(216, 205, 184, 0.9);
+        background: rgba(255, 252, 246, 0.68);
+        border-radius: 14px;
+        padding: 11px 12px;
+      }
+
+      .info-callout-label {
+        margin: 0 0 4px 0;
+        color: var(--highlight);
+        font-size: 10.5px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .info-callout p {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 12.5px;
+        line-height: 1.35;
+      }
+
+      .info-mini-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 11px;
+      }
+
+      .info-mini-item {
+        border: 1px solid rgba(47, 111, 146, 0.18);
+        background: rgba(47, 111, 146, 0.07);
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .info-mini-number {
+        display: block;
+        color: var(--ink);
+        font-weight: 900;
+        font-size: 15px;
+        line-height: 1.05;
+      }
+
+      .info-mini-label {
+        display: block;
+        margin-top: 3px;
+        color: var(--text-muted);
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
       .nav-link {
         display: none;
       }
@@ -573,32 +759,220 @@
       </header>
 
       <main class="dashboard-layout">
-        <aside class="side-column">
-          <div id="detail-panel">
-            <h2 class="detail-panel-title">Selected Street</h2>
-            <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
-          </div>
+        <section class="left-workspace">
+          <aside class="side-column">
+            <div id="detail-panel">
+              <h2 class="detail-panel-title">Selected Street</h2>
+              <p class="detail-empty">Click a colored street segment to view its sweeping schedule.</p>
+            </div>
 
-          <button id="reset-selection" type="button">
-            Reset selection
-          </button>
-        </aside>
+            <button id="reset-selection" type="button">
+              Reset selection
+            </button>
+          </aside>
 
-        <section class="map-card">
-          <div class="card-heading">
-            <h2>Interactive Street Sweeping Map</h2>
-            <p>
-              Streets are colored by estimated sweeps per month. Hover or click a segment to inspect its schedule.
-            </p>
-          </div>
+          <section class="map-card">
+            <div class="card-heading">
+              <div class="card-title-row">
+                <h2>Interactive Street Sweeping Map</h2>
+                <button class="info-jump" type="button" data-info-target="map" title="Show map explanation">i</button>
+              </div>
+              <p>
+                Streets are colored by estimated sweeps per month. Hover or click a segment to inspect its schedule.
+              </p>
+            </div>
 
-          <svg id="map" width="672" height="744"></svg>
+            <svg id="map" width="672" height="744"></svg>
+          </section>
+
+          <section class="info-card" id="info-panel">
+            <div class="info-card-header">
+              <div>
+                <h2>How to Read This Dashboard</h2>
+                <p class="info-subtitle">
+                  Use these notes to understand what each view shows, what patterns are worth looking for,
+                  and how the views connect to the map.
+                </p>
+              </div>
+
+              <div class="info-tabs" role="tablist">
+                <button class="info-tab active" type="button" data-info-target="general">General</button>
+                <button class="info-tab" type="button" data-info-target="map">Map</button>
+                <button class="info-tab" type="button" data-info-target="heatmap">Time Pattern</button>
+                <button class="info-tab" type="button" data-info-target="treemap">Frequency Groups</button>
+                <button class="info-tab" type="button" data-info-target="top-streets">Top Streets</button>
+              </div>
+            </div>
+
+            <article class="info-content active" data-info-panel="general">
+              <div class="info-grid">
+                <div class="info-main">
+                  <h3>From parking confusion to citywide pattern</h3>
+                  <p>
+                    This dashboard explores San Francisco street sweeping as both a practical parking problem
+                    and a city-scale scheduling system. Instead of checking one block at a time, the project
+                    lets you see where sweeping is most frequent, when it tends to happen, and how individual
+                    street segments compare to the citywide pattern.
+                  </p>
+                  <p>
+                    The map is the main view. The charts act as filters and context: clicking a chart element
+                    highlights matching streets, while clicking a street updates the detail panel and matching
+                    chart patterns.
+                  </p>
+
+                  <div class="info-mini-list">
+                    <div class="info-mini-item">
+                      <span class="info-mini-number">Map first</span>
+                      <span class="info-mini-label">The dashboard is built around spatial exploration.</span>
+                    </div>
+                    <div class="info-mini-item">
+                      <span class="info-mini-number">Linked views</span>
+                      <span class="info-mini-label">Charts and streets highlight each other.</span>
+                    </div>
+                    <div class="info-mini-item">
+                      <span class="info-mini-number">Street detail</span>
+                      <span class="info-mini-label">Click a segment to inspect its exact schedule.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info-callouts">
+                  <div class="info-callout">
+                    <p class="info-callout-label">Main question</p>
+                    <p>Does street sweeping follow visible citywide patterns, or does it feel inconsistent because every block has its own rules?</p>
+                  </div>
+                  <div class="info-callout">
+                    <p class="info-callout-label">How to use it</p>
+                    <p>Start with the map, then use the heatmap, treemap, and top-streets chart to filter or explain what you are seeing.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="info-content" data-info-panel="map">
+              <div class="info-grid">
+                <div class="info-main">
+                  <h3>The map shows where sweeping intensity is concentrated</h3>
+                  <p>
+                    Each colored line is a street segment. Lighter blues represent lower estimated sweeping frequency,
+                    while darker blues represent more frequent sweeping. The map is useful because street sweeping is
+                    inherently geographic: patterns that are hard to see in a table become visible as neighborhoods,
+                    corridors, and dense clusters.
+                  </p>
+                  <p>
+                    A major design decision was to keep a pale base layer underneath the colored street segments.
+                    That keeps the full city structure visible while still making the frequency layer readable.
+                  </p>
+                </div>
+
+                <div class="info-callouts">
+                  <div class="info-callout">
+                    <p class="info-callout-label">What to look for</p>
+                    <p>Darker clusters suggest areas with more repeated sweeping, often along busier grids and major corridors.</p>
+                  </div>
+                  <div class="info-callout">
+                    <p class="info-callout-label">Interaction</p>
+                    <p>Click any street segment to see its limits, days, time window, frequency group, and schedule summary.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="info-content" data-info-panel="heatmap">
+              <div class="info-grid">
+                <div class="info-main">
+                  <h3>The heatmap reveals when sweeping is most scheduled</h3>
+                  <p>
+                    The heatmap shows sweeping activity by weekday and time window. Darker cells mean more estimated
+                    scheduled sweeping occurrences in that weekday/time combination. This view is useful because time
+                    is two-dimensional here: the schedule depends on both the day and the hour.
+                  </p>
+                  <p>
+                    The clearest pattern is that weekday morning windows dominate the schedule, while weekend and
+                    later-day cells are much lighter. Click a single cell, a weekday label, or a time label to highlight
+                    matching streets on the map.
+                  </p>
+                </div>
+
+                <div class="info-callouts">
+                  <div class="info-callout">
+                    <p class="info-callout-label">Why a heatmap?</p>
+                    <p>A bar chart would only show one dimension at a time. The heatmap shows weekday and time together.</p>
+                  </div>
+                  <div class="info-callout">
+                    <p class="info-callout-label">Finding</p>
+                    <p>Sweeping is not evenly distributed across the week. It is heavily concentrated in specific weekday morning windows.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="info-content" data-info-panel="treemap">
+              <div class="info-grid">
+                <div class="info-main">
+                  <h3>The treemap shows how common each frequency group is</h3>
+                  <p>
+                    The treemap replaces the earlier frequency distribution bar chart with a compact area-based view.
+                    Each rectangle is a sweeps-per-month group, and its size shows how many street segments fall into
+                    that group. Larger rectangles mean that frequency group is more common across the city.
+                  </p>
+                  <p>
+                    The main takeaway is that the system is not evenly spread across all frequency groups. A few groups
+                    contain a much larger share of street segments, while the highest-frequency groups are smaller but
+                    still important because they represent more intense street maintenance.
+                  </p>
+                </div>
+
+                <div class="info-callouts">
+                  <div class="info-callout">
+                    <p class="info-callout-label">How to read it</p>
+                    <p>Area means number of street segments. Color still follows the same low-to-high frequency idea as the map.</p>
+                  </div>
+                  <div class="info-callout">
+                    <p class="info-callout-label">Interaction</p>
+                    <p>Click a rectangle to highlight every street segment in that frequency group on the map.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="info-content" data-info-panel="top-streets">
+              <div class="info-grid">
+                <div class="info-main">
+                  <h3>The bar chart identifies the most active street names overall</h3>
+                  <p>
+                    This chart groups street segments by full street name, then totals the estimated monthly sweeping
+                    activity for that street. It answers a different question from the map: not just which segment is
+                    intense, but which street names accumulate the most sweeping activity overall.
+                  </p>
+                  <p>
+                    Long streets and major corridors can rise to the top because they contain many segments. This makes
+                    the chart useful for identifying citywide corridors that matter most in the street sweeping system.
+                  </p>
+                </div>
+
+                <div class="info-callouts">
+                  <div class="info-callout">
+                    <p class="info-callout-label">Important caveat</p>
+                    <p>A high total can mean a street is swept often, has many segments, or both. Use the map highlight to see its spatial footprint.</p>
+                  </div>
+                  <div class="info-callout">
+                    <p class="info-callout-label">Interaction</p>
+                    <p>Click a bar to highlight all mapped segments with that street name.</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
         </section>
 
         <section class="charts-column">
           <div class="chart-card">
             <div class="card-heading">
-              <h2>Weekday and Time Pattern</h2>
+              <div class="card-title-row">
+                <h2>Weekday and Time Pattern</h2>
+                <button class="info-jump" type="button" data-info-target="heatmap" title="Show heatmap explanation">i</button>
+              </div>
               <p>
                 Click a cell for a single weekday/time combination, a weekday label for a full column,
                 or a time label for a full row.
@@ -610,7 +984,10 @@
 
           <div class="chart-card treemap-card">
             <div class="card-heading">
-              <h2>Frequency Treemap</h2>
+              <div class="card-title-row">
+                <h2>Frequency Treemap</h2>
+                <button class="info-jump" type="button" data-info-target="treemap" title="Show treemap explanation">i</button>
+              </div>
               <p>
                 Rectangle size shows how many street segments fall into each estimated sweeps-per-month group.
               </p>
@@ -621,7 +998,10 @@
 
           <div class="chart-card">
             <div class="card-heading">
-              <h2>Most Sweeping Activity by Street</h2>
+              <div class="card-title-row">
+                <h2>Most Sweeping Activity by Street</h2>
+                <button class="info-jump" type="button" data-info-target="top-streets" title="Show bar chart explanation">i</button>
+              </div>
               <p>
                 Full streets are grouped by name. Click a bar to highlight all mapped street segments with that street name.
               </p>
@@ -639,5 +1019,41 @@
     <script src="js/heatmap.js"></script>
     <script src="js/frequency_treemap.js"></script>
     <script src="js/top_streets.js"></script>
+
+    <script>
+      const infoTabs = document.querySelectorAll(".info-tab");
+      const infoPanels = document.querySelectorAll(".info-content");
+      const infoJumpButtons = document.querySelectorAll(".info-jump");
+
+      function showInfoPanel(target) {
+        infoTabs.forEach(tab => {
+          tab.classList.toggle("active", tab.dataset.infoTarget === target);
+        });
+
+        infoPanels.forEach(panel => {
+          panel.classList.toggle("active", panel.dataset.infoPanel === target);
+        });
+
+        const infoPanel = document.querySelector("#info-panel");
+        if (infoPanel) {
+          infoPanel.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest"
+          });
+        }
+      }
+
+      infoTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+          showInfoPanel(tab.dataset.infoTarget);
+        });
+      });
+
+      infoJumpButtons.forEach(button => {
+        button.addEventListener("click", () => {
+          showInfoPanel(button.dataset.infoTarget);
+        });
+      });
+    </script>
   </body>
 </html>
