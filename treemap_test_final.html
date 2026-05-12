@@ -47,7 +47,7 @@
         --chart-svg-width: 620px;
         --chart-svg-height: 245px;
 
-        --treemap-svg-height: 335px;
+        --treemap-svg-height: 405px;
       }
 
       * {
@@ -174,18 +174,15 @@
       }
 
       .chart-card {
-        height: 324px;
+        min-height: 324px;
+        height: auto;
         padding: 12px;
-        overflow: hidden;
+        overflow: visible;
       }
 
-      /*
-        IMPORTANT:
-        The treemap needs more vertical space because it has both the
-        treemap rectangles and a two-row frequency legend.
-      */
       .treemap-card {
-        height: 420px;
+        min-height: 500px;
+        height: auto;
       }
 
       .card-heading {
@@ -575,7 +572,7 @@
               </p>
             </div>
 
-            <svg id="chart" width="620" height="335"></svg>
+            <svg id="chart" width="620" height="405"></svg>
           </div>
 
           <div class="chart-card">
