@@ -15,6 +15,11 @@ let selectedHeatmapCells = new Set();
 let heatmapValueByCell = new Map();
 let heatmapData = [];
 
+let animationFrames = [];
+let animationIndex = 0;
+let animationTimer = null;
+let animationIsPlaying = false;
+
 const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeOrder = ["12-2", "2-4", "4-6", "6-8", "8-10", "10-12", "12-14"];
 
@@ -26,6 +31,16 @@ const weekdayDisplay = {
   Fri: "Friday",
   Sat: "Saturday",
   Sun: "Sunday"
+};
+
+const weekdayShortDisplay = {
+  Mon: "Mon",
+  Tues: "Tue",
+  Wed: "Wed",
+  Thu: "Thu",
+  Fri: "Fri",
+  Sat: "Sat",
+  Sun: "Sun"
 };
 
 const timeDisplay = {
@@ -123,6 +138,8 @@ function updateHeatmapSelection() {
 }
 
 function toggleSingleCell(cell) {
+  stopHeatmapAnimation(true);
+
   if (selectedHeatmapCells.has(cell)) {
     selectedHeatmapCells.delete(cell);
   } else {
@@ -134,6 +151,8 @@ function toggleSingleCell(cell) {
 }
 
 function toggleWeekdaySelection(weekday) {
+  stopHeatmapAnimation(true);
+
   const matchingCells = heatmapData
     .filter(d => d.weekday === weekday)
     .map(d => cellKey(d.weekday, d.time_bucket));
@@ -151,6 +170,8 @@ function toggleWeekdaySelection(weekday) {
 }
 
 function toggleTimeSelection(timeBucket) {
+  stopHeatmapAnimation(true);
+
   const matchingCells = heatmapData
     .filter(d => d.time_bucket === timeBucket)
     .map(d => cellKey(d.weekday, d.time_bucket));
@@ -167,6 +188,159 @@ function toggleTimeSelection(timeBucket) {
   pushHeatmapSelectionToDashboard();
 }
 
+/* =========================================================
+   TIMELINE ANIMATION
+========================================================= */
+
+function buildAnimationFrames() {
+  animationFrames = [];
+
+  weekdayOrder.forEach(weekday => {
+    timeOrder.forEach(timeBucket => {
+      animationFrames.push({
+        weekday: weekday,
+        timeBucket: timeBucket,
+        cell: cellKey(weekday, timeBucket),
+        label: `${weekdayShortDisplay[weekday] || weekday} · ${timeDisplay[timeBucket] || timeBucket}`
+      });
+    });
+  });
+}
+
+function updateTimelineUI(frameIndex) {
+  const playButton = document.querySelector("#heatmap-play");
+  const progress = document.querySelector("#timeline-progress");
+  const dot = document.querySelector("#timeline-dot");
+  const label = document.querySelector("#timeline-label");
+
+  if (!animationFrames.length) {
+    return;
+  }
+
+  const clampedIndex = Math.max(0, Math.min(frameIndex, animationFrames.length - 1));
+  const frame = animationFrames[clampedIndex];
+
+  const percent = animationFrames.length <= 1
+    ? 0
+    : (clampedIndex / (animationFrames.length - 1)) * 100;
+
+  if (playButton) {
+    playButton.textContent = animationIsPlaying ? "Ⅱ" : "▶";
+    playButton.classList.toggle("playing", animationIsPlaying);
+  }
+
+  if (progress) {
+    progress.style.width = `${percent}%`;
+  }
+
+  if (dot) {
+    dot.style.left = `${percent}%`;
+  }
+
+  if (label) {
+    label.textContent = frame.label;
+  }
+}
+
+function applyAnimationFrame(frameIndex) {
+  if (!animationFrames.length) {
+    return;
+  }
+
+  const clampedIndex = Math.max(0, Math.min(frameIndex, animationFrames.length - 1));
+  const frame = animationFrames[clampedIndex];
+
+  selectedHeatmapCells = new Set([frame.cell]);
+
+  updateHeatmapSelection();
+  updateTimelineUI(clampedIndex);
+
+  if (window.setAnimatedHeatmapSelection) {
+    window.setAnimatedHeatmapSelection(frame.cell, heatmapValueByCell.get(frame.cell) || 0);
+  }
+}
+
+function playNextAnimationFrame() {
+  applyAnimationFrame(animationIndex);
+
+  if (animationIndex >= animationFrames.length - 1) {
+    stopHeatmapAnimation(false);
+    return;
+  }
+
+  animationIndex += 1;
+}
+
+function startHeatmapAnimation() {
+  if (!animationFrames.length) {
+    return;
+  }
+
+  animationIsPlaying = true;
+  updateTimelineUI(animationIndex);
+
+  playNextAnimationFrame();
+
+  animationTimer = window.setInterval(() => {
+    playNextAnimationFrame();
+  }, 850);
+}
+
+function pauseHeatmapAnimation() {
+  if (animationTimer) {
+    window.clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  animationIsPlaying = false;
+  updateTimelineUI(animationIndex);
+}
+
+function stopHeatmapAnimation(resetVisuals) {
+  if (animationTimer) {
+    window.clearInterval(animationTimer);
+    animationTimer = null;
+  }
+
+  animationIsPlaying = false;
+
+  if (resetVisuals) {
+    animationIndex = 0;
+
+    const onlyCell = selectedHeatmapCells.size === 1
+      ? Array.from(selectedHeatmapCells)[0]
+      : null;
+
+    const isTimelineCell = onlyCell && animationFrames.some(frame => frame.cell === onlyCell);
+
+    if (isTimelineCell) {
+      selectedHeatmapCells = new Set();
+      updateHeatmapSelection();
+    }
+  }
+
+  updateTimelineUI(animationIndex);
+}
+
+function toggleHeatmapAnimation() {
+  if (animationIsPlaying) {
+    pauseHeatmapAnimation();
+    return;
+  }
+
+  if (animationIndex >= animationFrames.length - 1) {
+    animationIndex = 0;
+  }
+
+  startHeatmapAnimation();
+}
+
+window.stopHeatmapAnimation = stopHeatmapAnimation;
+
+/* =========================================================
+   HEATMAP SETUP
+========================================================= */
+
 d3.csv("data/processed/time_heatmap.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
@@ -174,6 +348,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
   });
 
   heatmapData = data;
+  buildAnimationFrames();
 
   const x = d3.scaleBand()
     .domain(weekdayOrder)
@@ -202,10 +377,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .call(d3.axisBottom(x));
 
   const yAxisG = heatG.append("g")
-    .call(
-      d3.axisLeft(y)
-        .tickFormat(d => timeDisplay[d] || d)
-    );
+    .call(d3.axisLeft(y).tickFormat(d => timeDisplay[d] || d));
 
   xAxisG.selectAll(".tick text")
     .attr("class", "weekday-axis-label")
@@ -321,13 +493,21 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("text-anchor", "middle")
     .text("Time Window");
 
+  const playButton = document.querySelector("#heatmap-play");
+  if (playButton) {
+    playButton.addEventListener("click", toggleHeatmapAnimation);
+  }
+
   updateHeatmapSelection();
+  updateTimelineUI(0);
 
 }).catch(error => {
   console.error("Error loading heatmap data:", error);
 });
 
 window.highlightHeatmapCells = function(heatmapCells) {
+  stopHeatmapAnimation(true);
+
   if (!heatmapCells) {
     selectedHeatmapCells = new Set();
     updateHeatmapSelection();
@@ -345,6 +525,7 @@ window.highlightHeatmapCells = function(heatmapCells) {
 };
 
 window.resetHeatmapHighlight = function() {
+  stopHeatmapAnimation(true);
   selectedHeatmapCells = new Set();
   updateHeatmapSelection();
 };
