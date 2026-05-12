@@ -122,26 +122,20 @@ function normalizeDay(day) {
   const dayMap = {
     mon: "Mon",
     monday: "Mon",
-
     tue: "Tue",
     tues: "Tue",
     tuesday: "Tue",
-
     wed: "Wed",
     weds: "Wed",
     wednesday: "Wed",
-
     thu: "Thu",
     thur: "Thu",
     thurs: "Thu",
     thursday: "Thu",
-
     fri: "Fri",
     friday: "Fri",
-
     sat: "Sat",
     saturday: "Sat",
-
     sun: "Sun",
     sunday: "Sun"
   };
@@ -243,11 +237,9 @@ function updateDetailPanel(d) {
   const frequencyGroup = escapeHTML(details.frequency_group);
   const holidaysText = yesNo(details.holidays);
   const holidayClass = holidaysText === "Yes" ? "warning" : "good";
-
   const daysCleaned = details.days_cleaned;
   const timeRanges = escapeHTML(details.time_ranges);
   const scheduleSummary = escapeHTML(details.schedule_summary);
-
   const blockSidePills = renderPills(splitList(details.block_sides), "blue");
   const sideSweptPills = renderPills(cleanSideSwept(details.street_sides), "blue");
 
@@ -339,7 +331,9 @@ function updateCombinedSelectionPanel(matchCount) {
     : "Any";
 
   d3.select("#detail-panel").html(`
-    <h2 class="detail-panel-title">Combined Selection</h2>
+    <h2 class="detail-panel-title">
+      ${activeMapMode === "animation" ? "Animated Time Window" : "Combined Selection"}
+    </h2>
 
     <section class="detail-section">
       <h3 class="detail-section-title">Active filters</h3>
@@ -372,7 +366,9 @@ function updateCombinedSelectionPanel(matchCount) {
     ` : ""}
 
     <p class="detail-footer-note">
-      The map highlights streets matching the selected frequency range and at least one selected heatmap cell.
+      ${activeMapMode === "animation"
+        ? "The map is animating scheduled time windows. Press pause to hold on this moment."
+        : "The map highlights streets matching the selected frequency range and at least one selected heatmap cell."}
     </p>
   `);
 }
@@ -569,6 +565,10 @@ Promise.all([
     })
 
     .on("click", function(event, d) {
+      if (window.stopHeatmapAnimation) {
+        window.stopHeatmapAnimation(true);
+      }
+
       selectedStreet = d;
       activeMapMode = "street";
       activeFrequencyGroup = null;
@@ -577,7 +577,6 @@ Promise.all([
       activeCorridor = null;
 
       applyMapStyles();
-
       d3.select(this).raise();
 
       updateDetailPanel(d);
@@ -617,7 +616,10 @@ Promise.all([
 
   function applyMapStyles() {
     streets
+      .interrupt()
       .classed("selected", d => activeMapMode === "street" && selectedStreet === d)
+      .transition()
+      .duration(activeMapMode === "animation" ? 520 : 180)
       .attr("stroke", d => {
         if (activeMapMode === "street" && selectedStreet === d) {
           return MAP_HIGHLIGHT_COLOR;
@@ -627,7 +629,7 @@ Promise.all([
           return MAP_HIGHLIGHT_COLOR;
         }
 
-        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
+        if ((activeMapMode === "filters" || activeMapMode === "animation") && streetMatchesActiveFilters(d)) {
           return MAP_HIGHLIGHT_COLOR;
         }
 
@@ -642,7 +644,7 @@ Promise.all([
           return 3.5;
         }
 
-        if (activeMapMode === "filters" && streetMatchesActiveFilters(d)) {
+        if ((activeMapMode === "filters" || activeMapMode === "animation") && streetMatchesActiveFilters(d)) {
           return 3.5;
         }
 
@@ -667,6 +669,10 @@ Promise.all([
 
         if (activeMapMode === "filters") {
           return streetMatchesActiveFilters(d) ? 1 : 0.12;
+        }
+
+        if (activeMapMode === "animation") {
+          return streetMatchesActiveFilters(d) ? 1 : 0.08;
         }
 
         return 0.96;
@@ -696,6 +702,10 @@ Promise.all([
   }
 
   window.setFrequencySelection = function(frequencyGroup) {
+    if (window.stopHeatmapAnimation) {
+      window.stopHeatmapAnimation(true);
+    }
+
     selectedStreet = null;
     activeCorridor = null;
     activeFrequencyGroup = frequencyGroup;
@@ -726,7 +736,43 @@ Promise.all([
     updateFilterPanel();
   };
 
+  window.setAnimatedHeatmapSelection = function(heatmapCell, heatmapValue) {
+    selectedStreet = null;
+    activeCorridor = null;
+    activeFrequencyGroup = null;
+    activeHeatmapValue = heatmapValue || 0;
+
+    activeHeatmapCells = new Set(
+      String(heatmapCell)
+        .split(",")
+        .map(d => d.trim())
+        .filter(d => d !== "" && !d.includes("Other"))
+    );
+
+    activeMapMode = "animation";
+
+    if (window.resetTopStreetHighlight) {
+      window.resetTopStreetHighlight();
+    }
+
+    if (window.resetFrequencyHighlight) {
+      window.resetFrequencyHighlight();
+    }
+
+    const matchCount = streets
+      .data()
+      .filter(d => streetMatchesActiveFilters(d))
+      .length;
+
+    applyMapStyles();
+    updateCombinedSelectionPanel(matchCount);
+  };
+
   window.highlightMapByCorridor = function(corridor, summary) {
+    if (window.stopHeatmapAnimation) {
+      window.stopHeatmapAnimation(true);
+    }
+
     selectedStreet = null;
     activeMapMode = "corridor";
     activeFrequencyGroup = null;
@@ -771,6 +817,10 @@ Promise.all([
   };
 
   window.resetDashboardSelection = function() {
+    if (window.stopHeatmapAnimation) {
+      window.stopHeatmapAnimation(true);
+    }
+
     selectedStreet = null;
     activeMapMode = "none";
     activeFrequencyGroup = null;
