@@ -2,7 +2,7 @@ const topSvg = d3.select("#top-streets");
 const topWidth = +topSvg.attr("width");
 const topHeight = +topSvg.attr("height");
 
-const TOP_STREET_HIGHLIGHT_COLOR = "#e60000";
+const TOP_STREET_HIGHLIGHT_COLOR = "#8d5aa7";
 
 const topMargin = { top: 40, right: 55, bottom: 45, left: 120 };
 const topInnerWidth = topWidth - topMargin.left - topMargin.right;
@@ -17,14 +17,15 @@ const topStreetTooltip = d3.select("body")
   .style("position", "absolute")
   .style("display", "none")
   .style("pointer-events", "none")
-  .style("background", "white")
-  .style("border", "1px solid #999")
-  .style("border-radius", "6px")
+  .style("background", "rgba(255, 251, 244, 0.98)")
+  .style("border", "1px solid #d8cdb8")
+  .style("border-radius", "10px")
   .style("padding", "8px 10px")
   .style("font-size", "13px")
   .style("line-height", "1.4")
-  .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
-  .style("z-index", "20");
+  .style("box-shadow", "0 10px 22px rgba(36, 49, 60, 0.14)")
+  .style("z-index", "20")
+  .style("color", "#1f3140");
 
 function shortenLabel(label, maxLength) {
   if (label.length > maxLength) {
@@ -100,8 +101,8 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     .attr("y", d => y(d.corridor))
     .attr("width", d => x(d.total_frequency))
     .attr("height", y.bandwidth())
-    .attr("fill", "steelblue")
-    .attr("opacity", 0.85)
+    .attr("fill", "#6f99bd")
+    .attr("opacity", 0.9)
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
       topStreetTooltip
@@ -139,7 +140,8 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     .attr("x", d => x(d.total_frequency) + 5)
     .attr("y", d => y(d.corridor) + y.bandwidth() / 2 + 4)
     .text(d => d.total_frequency)
-    .style("font-size", "11px");
+    .style("font-size", "11px")
+    .style("fill", "#123b52");
 
   topSvg.append("text")
     .attr("class", "chart-title")
@@ -176,7 +178,7 @@ window.highlightTopStreetBar = function(corridor) {
 
 window.resetTopStreetHighlight = function() {
   d3.selectAll(".top-street-bar")
-    .attr("opacity", 0.85)
+    .attr("opacity", 0.9)
     .attr("stroke", "none")
     .attr("stroke-width", 0);
 };
