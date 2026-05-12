@@ -2,7 +2,9 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-const freqMargin = { top: 42, right: 10, bottom: 14, left: 10 };
+// More bottom margin = dedicated space for the legend.
+// This keeps the treemap from getting cut off at the bottom.
+const freqMargin = { top: 38, right: 10, bottom: 62, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -66,27 +68,33 @@ function boxLabelText(d) {
   return `${d.data.frequency}x`;
 }
 
+function legendLabelText(d) {
+  return `${d.frequency}x`;
+}
+
 function labelFontSize(d) {
   const frequency = d.data.frequency;
   const w = tileWidth(d);
   const h = tileHeight(d);
 
-  if (frequency === "37+") return "7px";
-  if (frequency === "21-28") return "8px";
-  if (frequency === "13-16") return "9px";
+  // Custom fixes for tiny boxes.
+  if (frequency === "37+") return "6.5px";
+  if (frequency === "21-28") return "7.5px";
+  if (frequency === "13-16") return "8px";
+  if (frequency === "9-12") return "9px";
 
-  if (w < 28 || h < 18) return "7px";
-  if (w < 42 || h < 24) return "8px";
-  if (w < 60 || h < 32) return "9px";
-  if (w < 88 || h < 40) return "11px";
-  if (w < 130 || h < 56) return "13px";
-  return "18px";
+  if (w < 28 || h < 18) return "6.5px";
+  if (w < 42 || h < 24) return "7.5px";
+  if (w < 60 || h < 32) return "8.5px";
+  if (w < 88 || h < 40) return "10px";
+  if (w < 130 || h < 56) return "12px";
+  return "17px";
 }
 
 function labelWeight(d) {
   const frequency = d.data.frequency;
 
-  if (frequency === "37+" || frequency === "21-28") {
+  if (frequency === "37+" || frequency === "21-28" || frequency === "13-16") {
     return "700";
   }
 
@@ -113,6 +121,10 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
   });
+
+  const legendData = [...data].sort(
+    (a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency)
+  );
 
   const treemapData = [...data].sort((a, b) => b.count - a.count);
 
@@ -203,6 +215,78 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("text-anchor", "middle")
     .text("Street Segments by Estimated Sweeps per Month");
 
+  // Compact legend, inside the reserved bottom space.
+  const legendG = freqSvg.append("g")
+    .attr("class", "treemap-mini-legend")
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 48})`);
+
+  legendG.append("text")
+    .attr("x", 0)
+    .attr("y", 0)
+    .style("font-size", "10.5px")
+    .style("font-weight", "bold")
+    .style("fill", "#123b52")
+    .text("Frequency groups");
+
+  const legendItems = legendG.selectAll(".treemap-legend-item")
+    .data(legendData)
+    .enter()
+    .append("g")
+    .attr("class", "treemap-legend-item")
+    .attr("data-frequency", d => d.frequency)
+    .attr("transform", function(d, i) {
+      const col = i % 7;
+      const row = Math.floor(i / 7);
+      return `translate(${col * 82},${14 + row * 16})`;
+    })
+    .style("cursor", "pointer")
+    .on("mouseover", function(event, d) {
+      treemapTooltip
+        .style("display", "block")
+        .html(`
+          <strong>${d.frequency} times/month</strong><br>
+          ${formatCount(d.count)} street segments
+        `);
+    })
+    .on("mousemove", function(event) {
+      treemapTooltip
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY + 12}px`);
+    })
+    .on("mouseout", function() {
+      treemapTooltip.style("display", "none");
+    })
+    .on("click", function(event, d) {
+      if (selectedFrequencyGroup === d.frequency) {
+        selectedFrequencyGroup = null;
+      } else {
+        selectedFrequencyGroup = d.frequency;
+      }
+
+      updateFrequencySelection();
+
+      if (window.setFrequencySelection) {
+        window.setFrequencySelection(selectedFrequencyGroup);
+      }
+    });
+
+  legendItems.append("rect")
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("rx", 2)
+    .attr("ry", 2)
+    .attr("fill", d => frequencyColor(d.frequency))
+    .attr("stroke", "#8ca0ac")
+    .attr("stroke-width", 0.6);
+
+  legendItems.append("text")
+    .attr("x", 15)
+    .attr("y", 8.8)
+    .style("font-size", "9.5px")
+    .style("font-weight", "bold")
+    .style("fill", "#123b52")
+    .text(d => legendLabelText(d));
+
 }).catch(error => {
   console.error("Error loading frequency treemap data:", error);
 });
@@ -227,6 +311,27 @@ function updateFrequencySelection() {
     .attr("stroke-width", function() {
       const frequency = d3.select(this.parentNode).attr("data-frequency");
       return frequency === selectedFrequencyGroup ? 2 : 1;
+    });
+
+  d3.selectAll(".treemap-legend-item")
+    .attr("opacity", function() {
+      const frequency = d3.select(this).attr("data-frequency");
+
+      if (!selectedFrequencyGroup) {
+        return 1;
+      }
+
+      return frequency === selectedFrequencyGroup ? 1 : 0.35;
+    });
+
+  d3.selectAll(".treemap-legend-item rect")
+    .attr("stroke", function() {
+      const frequency = d3.select(this.parentNode).attr("data-frequency");
+      return frequency === selectedFrequencyGroup ? "#8d5aa7" : "#8ca0ac";
+    })
+    .attr("stroke-width", function() {
+      const frequency = d3.select(this.parentNode).attr("data-frequency");
+      return frequency === selectedFrequencyGroup ? 2 : 0.6;
     });
 }
 
