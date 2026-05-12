@@ -20,6 +20,7 @@ let animationIndex = 0;
 let animationTimer = null;
 let animationIsPlaying = false;
 let animationSelectionActive = false;
+let timelineIsDragging = false;
 
 const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeOrder = ["12-2", "2-4", "4-6", "6-8", "8-10", "10-12", "12-14"];
@@ -205,7 +206,7 @@ function toggleTimeSelection(timeBucket) {
 }
 
 /* =========================================================
-   TIMELINE ANIMATION
+   TIMELINE ANIMATION + SLIDER
 ========================================================= */
 
 function buildAnimationFrames() {
@@ -266,6 +267,7 @@ function applyAnimationFrame(frameIndex) {
   const clampedIndex = Math.max(0, Math.min(frameIndex, animationFrames.length - 1));
   const frame = animationFrames[clampedIndex];
 
+  animationIndex = clampedIndex;
   selectedHeatmapCells = new Set([frame.cell]);
   animationSelectionActive = true;
 
@@ -345,6 +347,68 @@ function toggleHeatmapAnimation() {
   }
 
   startHeatmapAnimation();
+}
+
+function frameIndexFromTimelineEvent(event) {
+  const track = document.querySelector(".timeline-track");
+
+  if (!track || !animationFrames.length) {
+    return 0;
+  }
+
+  const rect = track.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const ratio = Math.max(0, Math.min(1, x / rect.width));
+
+  return Math.round(ratio * (animationFrames.length - 1));
+}
+
+function scrubTimeline(event) {
+  if (!animationFrames.length) {
+    return;
+  }
+
+  pauseHeatmapAnimation();
+
+  const newIndex = frameIndexFromTimelineEvent(event);
+  applyAnimationFrame(newIndex);
+}
+
+function startTimelineDrag(event) {
+  event.preventDefault();
+  timelineIsDragging = true;
+  scrubTimeline(event);
+}
+
+function moveTimelineDrag(event) {
+  if (!timelineIsDragging) {
+    return;
+  }
+
+  scrubTimeline(event);
+}
+
+function stopTimelineDrag() {
+  timelineIsDragging = false;
+}
+
+function initTimelineSlider() {
+  const track = document.querySelector(".timeline-track");
+  const dot = document.querySelector("#timeline-dot");
+
+  if (!track || !dot) {
+    return;
+  }
+
+  track.style.cursor = "pointer";
+  dot.style.cursor = "grab";
+
+  track.addEventListener("pointerdown", startTimelineDrag);
+  dot.addEventListener("pointerdown", startTimelineDrag);
+
+  window.addEventListener("pointermove", moveTimelineDrag);
+  window.addEventListener("pointerup", stopTimelineDrag);
+  window.addEventListener("pointercancel", stopTimelineDrag);
 }
 
 window.stopHeatmapAnimation = stopHeatmapAnimation;
@@ -509,6 +573,8 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
   if (playButton) {
     playButton.addEventListener("click", toggleHeatmapAnimation);
   }
+
+  initTimelineSlider();
 
   updateHeatmapSelection();
   updateTimelineUI(0);
