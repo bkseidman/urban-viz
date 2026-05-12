@@ -62,12 +62,20 @@ function tileHeight(d) {
   return d.y1 - d.y0;
 }
 
+function formatFrequencyWithX(frequency) {
+  if (frequency === "37+") {
+    return "37x+";
+  }
+
+  return `${frequency}x`;
+}
+
 function boxLabelText(d) {
-  return `${d.data.frequency}x`;
+  return formatFrequencyWithX(d.data.frequency);
 }
 
 function legendLabelText(d) {
-  return `${d.frequency}x`;
+  return formatFrequencyWithX(d.frequency);
 }
 
 function labelFontSize(d) {
