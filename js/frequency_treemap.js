@@ -2,8 +2,7 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-// Bigger SVG now, so we can have both treemap and a complete legend.
-const freqMargin = { top: 42, right: 10, bottom: 74, left: 10 };
+const freqMargin = { top: 42, right: 10, bottom: 82, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -215,7 +214,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
 
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 60})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 66})`);
 
   legendG.append("text")
     .attr("x", 0)
@@ -234,7 +233,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 7;
       const row = Math.floor(i / 7);
-      return `translate(${col * 82},${17 + row * 20})`;
+      return `translate(${col * 82},${18 + row * 22})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
