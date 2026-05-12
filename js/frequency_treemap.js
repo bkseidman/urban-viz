@@ -2,9 +2,8 @@ const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
-// More bottom margin = dedicated space for the legend.
-// This keeps the treemap from getting cut off at the bottom.
-const freqMargin = { top: 38, right: 10, bottom: 62, left: 10 };
+// Bigger SVG now, so we can have both treemap and a complete legend.
+const freqMargin = { top: 42, right: 10, bottom: 74, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 
@@ -77,7 +76,6 @@ function labelFontSize(d) {
   const w = tileWidth(d);
   const h = tileHeight(d);
 
-  // Custom fixes for tiny boxes.
   if (frequency === "37+") return "6.5px";
   if (frequency === "21-28") return "7.5px";
   if (frequency === "13-16") return "8px";
@@ -215,15 +213,14 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("text-anchor", "middle")
     .text("Street Segments by Estimated Sweeps per Month");
 
-  // Compact legend, inside the reserved bottom space.
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
-    .attr("transform", `translate(${freqMargin.left},${freqHeight - 48})`);
+    .attr("transform", `translate(${freqMargin.left},${freqHeight - 60})`);
 
   legendG.append("text")
     .attr("x", 0)
     .attr("y", 0)
-    .style("font-size", "10.5px")
+    .style("font-size", "11px")
     .style("font-weight", "bold")
     .style("fill", "#123b52")
     .text("Frequency groups");
@@ -237,7 +234,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("transform", function(d, i) {
       const col = i % 7;
       const row = Math.floor(i / 7);
-      return `translate(${col * 82},${14 + row * 16})`;
+      return `translate(${col * 82},${17 + row * 20})`;
     })
     .style("cursor", "pointer")
     .on("mouseover", function(event, d) {
@@ -271,8 +268,8 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     });
 
   legendItems.append("rect")
-    .attr("width", 10)
-    .attr("height", 10)
+    .attr("width", 11)
+    .attr("height", 11)
     .attr("rx", 2)
     .attr("ry", 2)
     .attr("fill", d => frequencyColor(d.frequency))
@@ -280,9 +277,9 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke-width", 0.6);
 
   legendItems.append("text")
-    .attr("x", 15)
-    .attr("y", 8.8)
-    .style("font-size", "9.5px")
+    .attr("x", 16)
+    .attr("y", 9.5)
+    .style("font-size", "10px")
     .style("font-weight", "bold")
     .style("fill", "#123b52")
     .text(d => legendLabelText(d));
