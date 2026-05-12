@@ -7,7 +7,6 @@
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -295,8 +294,6 @@
         width: var(--chart-svg-width);
         height: var(--treemap-svg-height);
       }
-
-      /* detail panel */
 
       #detail-panel {
         width: 100%;
@@ -788,10 +785,10 @@
           <section class="info-card" id="info-panel">
             <div class="info-card-header">
               <div>
-                <h2>How to Read This Dashboard</h2>
+                <h2>Findings and How to Read the Dashboard</h2>
                 <p class="info-subtitle">
-                  Use these notes to understand what each view shows, what patterns are worth looking for,
-                  and how the views connect to the map.
+                  This section explains what each view is showing, what patterns matter,
+                  and how to use the charts as filters for the map.
                 </p>
               </div>
 
@@ -807,43 +804,43 @@
             <article class="info-content active" data-info-panel="general">
               <div class="info-grid">
                 <div class="info-main">
-                  <h3>From parking confusion to citywide pattern</h3>
+                  <h3>Street cleaning is a city system that people experience one block at a time</h3>
                   <p>
-                    This dashboard explores San Francisco street sweeping as both a practical parking problem
-                    and a city-scale scheduling system. Instead of checking one block at a time, the project
-                    lets you see where sweeping is most frequent, when it tends to happen, and how individual
-                    street segments compare to the citywide pattern.
+                    This dashboard turns San Francisco street sweeping from a confusing set of parking signs into
+                    a citywide pattern. Public Works describes mechanical sweeping as covering most city streets
+                    and removing large amounts of litter and debris, while SFMTA frames street-cleaning citations
+                    as a way to keep sweepers from being blocked.
                   </p>
                   <p>
-                    The map is the main view. The charts act as filters and context: clicking a chart element
-                    highlights matching streets, while clicking a street updates the detail panel and matching
-                    chart patterns.
+                    The main finding is that street cleaning is not evenly distributed. Frequency, time, and street
+                    type all matter: some groups dominate the citywide schedule, some weekday/time windows are much
+                    busier than others, and several major corridors stand out when full street names are totaled.
                   </p>
 
                   <div class="info-mini-list">
                     <div class="info-mini-item">
-                      <span class="info-mini-number">Map first</span>
-                      <span class="info-mini-label">The dashboard is built around spatial exploration.</span>
+                      <span class="info-mini-number">Spatial</span>
+                      <span class="info-mini-label">The map shows where high-frequency sweeping clusters.</span>
                     </div>
                     <div class="info-mini-item">
-                      <span class="info-mini-number">Linked views</span>
-                      <span class="info-mini-label">Charts and streets highlight each other.</span>
+                      <span class="info-mini-number">Temporal</span>
+                      <span class="info-mini-label">The heatmap shows which weekdays and hours dominate.</span>
                     </div>
                     <div class="info-mini-item">
-                      <span class="info-mini-number">Street detail</span>
-                      <span class="info-mini-label">Click a segment to inspect its exact schedule.</span>
+                      <span class="info-mini-number">Comparative</span>
+                      <span class="info-mini-label">The treemap and bars show which groups and streets stand out.</span>
                     </div>
                   </div>
                 </div>
 
                 <div class="info-callouts">
                   <div class="info-callout">
-                    <p class="info-callout-label">Main question</p>
-                    <p>Does street sweeping follow visible citywide patterns, or does it feel inconsistent because every block has its own rules?</p>
+                    <p class="info-callout-label">Outside context</p>
+                    <p>Local reporting often frames street cleaning as both a cleanliness system and a parking headache, especially because signs vary block by block.</p>
                   </div>
                   <div class="info-callout">
                     <p class="info-callout-label">How to use it</p>
-                    <p>Start with the map, then use the heatmap, treemap, and top-streets chart to filter or explain what you are seeing.</p>
+                    <p>Start with the map, then click a chart element to filter the city. Click a street segment when you want the exact schedule.</p>
                   </div>
                 </div>
               </div>
@@ -854,25 +851,25 @@
                 <div class="info-main">
                   <h3>The map shows where sweeping intensity is concentrated</h3>
                   <p>
-                    Each colored line is a street segment. Lighter blues represent lower estimated sweeping frequency,
-                    while darker blues represent more frequent sweeping. The map is useful because street sweeping is
-                    inherently geographic: patterns that are hard to see in a table become visible as neighborhoods,
-                    corridors, and dense clusters.
+                    Each line is a street segment. Lighter blues mean lower estimated sweeps per month, while darker
+                    blues mean more frequent sweeping. The map makes the schedule feel less random: high-frequency
+                    streets often appear as visible corridors and dense clusters rather than isolated single blocks.
                   </p>
                   <p>
-                    A major design decision was to keep a pale base layer underneath the colored street segments.
-                    That keeps the full city structure visible while still making the frequency layer readable.
+                    This helps explain why street cleaning feels different depending on where you park. Residential
+                    blocks often sit in lighter frequency groups, while busier grids and commercial corridors tend
+                    to show stronger activity. Use the map as the main view, then use the charts to explain the pattern.
                   </p>
                 </div>
 
                 <div class="info-callouts">
                   <div class="info-callout">
-                    <p class="info-callout-label">What to look for</p>
-                    <p>Darker clusters suggest areas with more repeated sweeping, often along busier grids and major corridors.</p>
+                    <p class="info-callout-label">Finding</p>
+                    <p>The darkest streets are not evenly scattered. They tend to line up with denser street grids and major corridors.</p>
                   </div>
                   <div class="info-callout">
                     <p class="info-callout-label">Interaction</p>
-                    <p>Click any street segment to see its limits, days, time window, frequency group, and schedule summary.</p>
+                    <p>Click a street segment to see its limits, days cleaned, time window, frequency group, and full schedule summary.</p>
                   </div>
                 </div>
               </div>
@@ -881,27 +878,28 @@
             <article class="info-content" data-info-panel="heatmap">
               <div class="info-grid">
                 <div class="info-main">
-                  <h3>The heatmap reveals when sweeping is most scheduled</h3>
+                  <h3>The heatmap shows that timing is not evenly spread across the week</h3>
                   <p>
-                    The heatmap shows sweeping activity by weekday and time window. Darker cells mean more estimated
-                    scheduled sweeping occurrences in that weekday/time combination. This view is useful because time
-                    is two-dimensional here: the schedule depends on both the day and the hour.
+                    The heatmap groups scheduled sweeping by weekday and time window. Darker cells mean more estimated
+                    monthly scheduled occurrences. The clearest pattern is that weekday morning windows dominate,
+                    especially compared with weekends and later-day windows.
                   </p>
                   <p>
-                    The clearest pattern is that weekday morning windows dominate the schedule, while weekend and
-                    later-day cells are much lighter. Click a single cell, a weekday label, or a time label to highlight
-                    matching streets on the map.
+                    This matters because the real-world experience of street cleaning is time-based: people are not
+                    just asking “where is sweeping?” but “when do I have to move my car?” SFMTA materials separate
+                    overnight street cleaning from weekday daytime sweeping, and this heatmap makes those schedule
+                    blocks visible at once.
                   </p>
                 </div>
 
                 <div class="info-callouts">
                   <div class="info-callout">
-                    <p class="info-callout-label">Why a heatmap?</p>
-                    <p>A bar chart would only show one dimension at a time. The heatmap shows weekday and time together.</p>
+                    <p class="info-callout-label">Finding</p>
+                    <p>The strongest cells are mostly weekday morning periods. Weekend cells are much lighter, so the schedule is not balanced across all days.</p>
                   </div>
                   <div class="info-callout">
-                    <p class="info-callout-label">Finding</p>
-                    <p>Sweeping is not evenly distributed across the week. It is heavily concentrated in specific weekday morning windows.</p>
+                    <p class="info-callout-label">Interaction</p>
+                    <p>Click one cell for a specific weekday/time window, a weekday label for a full column, or a time label for a full row.</p>
                   </div>
                 </div>
               </div>
@@ -910,27 +908,28 @@
             <article class="info-content" data-info-panel="treemap">
               <div class="info-grid">
                 <div class="info-main">
-                  <h3>The treemap shows how common each frequency group is</h3>
+                  <h3>The treemap shows which frequency groups define the system</h3>
                   <p>
-                    The treemap replaces the earlier frequency distribution bar chart with a compact area-based view.
-                    Each rectangle is a sweeps-per-month group, and its size shows how many street segments fall into
-                    that group. Larger rectangles mean that frequency group is more common across the city.
+                    Each rectangle is a sweeps-per-month group, and its area shows how many street segments fall into
+                    that group. The biggest groups in this dataset are the mid-frequency categories, especially 4x
+                    and 7–8x per month. That means a large share of mapped street segments are cleaned roughly weekly
+                    or around twice weekly.
                   </p>
                   <p>
-                    The main takeaway is that the system is not evenly spread across all frequency groups. A few groups
-                    contain a much larger share of street segments, while the highest-frequency groups are smaller but
-                    still important because they represent more intense street maintenance.
+                    The smaller high-frequency groups are still important. They cover fewer segments, but they represent
+                    the most intensive schedules. So the treemap separates what is most common citywide from what is
+                    most intense locally.
                   </p>
                 </div>
 
                 <div class="info-callouts">
                   <div class="info-callout">
-                    <p class="info-callout-label">How to read it</p>
-                    <p>Area means number of street segments. Color still follows the same low-to-high frequency idea as the map.</p>
+                    <p class="info-callout-label">Finding</p>
+                    <p>The distribution is skewed. A few mid-frequency groups dominate, while the highest-frequency groups are smaller but more intense.</p>
                   </div>
                   <div class="info-callout">
                     <p class="info-callout-label">Interaction</p>
-                    <p>Click a rectangle to highlight every street segment in that frequency group on the map.</p>
+                    <p>Click a rectangle to highlight every street segment in that frequency group. Hover to see the segment count.</p>
                   </div>
                 </div>
               </div>
@@ -939,26 +938,27 @@
             <article class="info-content" data-info-panel="top-streets">
               <div class="info-grid">
                 <div class="info-main">
-                  <h3>The bar chart identifies the most active street names overall</h3>
+                  <h3>The bar chart identifies the streets with the most total scheduled activity</h3>
                   <p>
-                    This chart groups street segments by full street name, then totals the estimated monthly sweeping
-                    activity for that street. It answers a different question from the map: not just which segment is
-                    intense, but which street names accumulate the most sweeping activity overall.
+                    This chart groups segments by street name and totals their estimated monthly sweeping activity.
+                    Major corridors like Mission St, 03rd St, Market St, and Van Ness Ave stand out because they
+                    combine many mapped segments with repeated cleaning schedules.
                   </p>
                   <p>
-                    Long streets and major corridors can rise to the top because they contain many segments. This makes
-                    the chart useful for identifying citywide corridors that matter most in the street sweeping system.
+                    This chart should not be read as “one block gets cleaned this many times.” It is a grouped street-name
+                    total. A street can rank high because it is long, because its segments are swept often, or because
+                    both are true.
                   </p>
                 </div>
 
                 <div class="info-callouts">
                   <div class="info-callout">
-                    <p class="info-callout-label">Important caveat</p>
-                    <p>A high total can mean a street is swept often, has many segments, or both. Use the map highlight to see its spatial footprint.</p>
+                    <p class="info-callout-label">Finding</p>
+                    <p>The top streets are mostly recognizable corridors, suggesting that sweeping intensity is tied to city structure rather than isolated blocks.</p>
                   </div>
                   <div class="info-callout">
                     <p class="info-callout-label">Interaction</p>
-                    <p>Click a bar to highlight all mapped segments with that street name.</p>
+                    <p>Click a bar to highlight all mapped segments with that street name. Then use the map to see whether the activity is clustered or spread out.</p>
                   </div>
                 </div>
               </div>
