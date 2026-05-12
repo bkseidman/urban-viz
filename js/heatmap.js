@@ -19,6 +19,7 @@ let animationFrames = [];
 let animationIndex = 0;
 let animationTimer = null;
 let animationIsPlaying = false;
+let animationSelectionActive = false;
 
 const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeOrder = ["12-2", "2-4", "4-6", "6-8", "8-10", "10-12", "12-14"];
@@ -137,8 +138,20 @@ function updateHeatmapSelection() {
     .style("font-weight", d => rowIsActive(d) ? "700" : "400");
 }
 
+function resetAnimationButKeepManualSelection() {
+  if (animationSelectionActive) {
+    selectedHeatmapCells = new Set();
+    animationSelectionActive = false;
+    updateHeatmapSelection();
+  }
+
+  stopHeatmapAnimation(false);
+  animationIndex = 0;
+  updateTimelineUI(animationIndex);
+}
+
 function toggleSingleCell(cell) {
-  stopHeatmapAnimation(true);
+  resetAnimationButKeepManualSelection();
 
   if (selectedHeatmapCells.has(cell)) {
     selectedHeatmapCells.delete(cell);
@@ -146,12 +159,13 @@ function toggleSingleCell(cell) {
     selectedHeatmapCells.add(cell);
   }
 
+  animationSelectionActive = false;
   updateHeatmapSelection();
   pushHeatmapSelectionToDashboard();
 }
 
 function toggleWeekdaySelection(weekday) {
-  stopHeatmapAnimation(true);
+  resetAnimationButKeepManualSelection();
 
   const matchingCells = heatmapData
     .filter(d => d.weekday === weekday)
@@ -165,12 +179,13 @@ function toggleWeekdaySelection(weekday) {
     matchingCells.forEach(cell => selectedHeatmapCells.add(cell));
   }
 
+  animationSelectionActive = false;
   updateHeatmapSelection();
   pushHeatmapSelectionToDashboard();
 }
 
 function toggleTimeSelection(timeBucket) {
-  stopHeatmapAnimation(true);
+  resetAnimationButKeepManualSelection();
 
   const matchingCells = heatmapData
     .filter(d => d.time_bucket === timeBucket)
@@ -184,6 +199,7 @@ function toggleTimeSelection(timeBucket) {
     matchingCells.forEach(cell => selectedHeatmapCells.add(cell));
   }
 
+  animationSelectionActive = false;
   updateHeatmapSelection();
   pushHeatmapSelectionToDashboard();
 }
@@ -251,6 +267,7 @@ function applyAnimationFrame(frameIndex) {
   const frame = animationFrames[clampedIndex];
 
   selectedHeatmapCells = new Set([frame.cell]);
+  animationSelectionActive = true;
 
   updateHeatmapSelection();
   updateTimelineUI(clampedIndex);
@@ -276,6 +293,9 @@ function startHeatmapAnimation() {
     return;
   }
 
+  selectedHeatmapCells = new Set();
+  animationSelectionActive = true;
+
   animationIsPlaying = true;
   updateTimelineUI(animationIndex);
 
@@ -296,7 +316,7 @@ function pauseHeatmapAnimation() {
   updateTimelineUI(animationIndex);
 }
 
-function stopHeatmapAnimation(resetVisuals) {
+function stopHeatmapAnimation(clearAnimatedSelection) {
   if (animationTimer) {
     window.clearInterval(animationTimer);
     animationTimer = null;
@@ -304,19 +324,11 @@ function stopHeatmapAnimation(resetVisuals) {
 
   animationIsPlaying = false;
 
-  if (resetVisuals) {
+  if (clearAnimatedSelection && animationSelectionActive) {
+    selectedHeatmapCells = new Set();
+    animationSelectionActive = false;
     animationIndex = 0;
-
-    const onlyCell = selectedHeatmapCells.size === 1
-      ? Array.from(selectedHeatmapCells)[0]
-      : null;
-
-    const isTimelineCell = onlyCell && animationFrames.some(frame => frame.cell === onlyCell);
-
-    if (isTimelineCell) {
-      selectedHeatmapCells = new Set();
-      updateHeatmapSelection();
-    }
+    updateHeatmapSelection();
   }
 
   updateTimelineUI(animationIndex);
@@ -446,7 +458,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
         .html(`
           <strong>${weekdayDisplay[d.weekday] || d.weekday}, ${timeDisplay[d.time_bucket] || d.time_bucket}</strong><br>
           ${d.count.toLocaleString()} estimated monthly scheduled sweeping occurrences<br>
-          Click to select just this cell.
+          Click to select or deselect this cell.
         `);
     })
     .on("mousemove", function(event) {
@@ -510,6 +522,7 @@ window.highlightHeatmapCells = function(heatmapCells) {
 
   if (!heatmapCells) {
     selectedHeatmapCells = new Set();
+    animationSelectionActive = false;
     updateHeatmapSelection();
     return;
   }
@@ -521,11 +534,15 @@ window.highlightHeatmapCells = function(heatmapCells) {
       .filter(d => d !== "" && !d.includes("Other"))
   );
 
+  animationSelectionActive = false;
   updateHeatmapSelection();
 };
 
 window.resetHeatmapHighlight = function() {
   stopHeatmapAnimation(true);
   selectedHeatmapCells = new Set();
+  animationSelectionActive = false;
+  animationIndex = 0;
   updateHeatmapSelection();
+  updateTimelineUI(animationIndex);
 };
