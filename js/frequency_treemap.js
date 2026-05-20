@@ -1,7 +1,9 @@
+// Select the frequency treemap SVG and read its size.
 const freqSvg = d3.select("#chart");
 const freqWidth = +freqSvg.attr("width");
 const freqHeight = +freqSvg.attr("height");
 
+// Margins leave room for the title and legend.
 const freqMargin = { top: 42, right: 10, bottom: 82, left: 10 };
 const freqInnerWidth = freqWidth - freqMargin.left - freqMargin.right;
 const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
@@ -9,8 +11,10 @@ const freqInnerHeight = freqHeight - freqMargin.top - freqMargin.bottom;
 const freqG = freqSvg.append("g")
   .attr("transform", `translate(${freqMargin.left},${freqMargin.top})`);
 
+// Tracks the currently selected frequency group.
 let selectedFrequencyGroup = null;
 
+// Keeps the frequency groups in a consistent order across the treemap and legend.
 const frequencyOrder = [
   "1",
   "2",
@@ -27,6 +31,7 @@ const frequencyOrder = [
   "37+"
 ];
 
+// Color scale for the frequency groups.
 const frequencyColor = d3.scaleOrdinal()
   .domain(frequencyOrder)
   .range([
@@ -45,15 +50,18 @@ const frequencyColor = d3.scaleOrdinal()
     "#123b52"
   ]);
 
+// Format counts with commas.
 function formatCount(value) {
   return d3.format(",")(value);
 }
 
+// Use white text on the darkest boxes so labels stay readable.
 function readableTextColor(frequency) {
   const darkGroups = new Set(["17-20", "21-28", "29-36", "37+"]);
   return darkGroups.has(frequency) ? "white" : "#123b52";
 }
 
+// Small helper functions for treemap tile sizes.
 function tileWidth(d) {
   return d.x1 - d.x0;
 }
@@ -62,6 +70,7 @@ function tileHeight(d) {
   return d.y1 - d.y0;
 }
 
+// Add an x to make frequency labels clearer.
 function formatFrequencyWithX(frequency) {
   if (frequency === "37+") {
     return "37x+";
@@ -78,6 +87,7 @@ function legendLabelText(d) {
   return formatFrequencyWithX(d.frequency);
 }
 
+// Adjust label size so smaller boxes do not get too crowded.
 function labelFontSize(d) {
   const frequency = d.data.frequency;
   const w = tileWidth(d);
@@ -96,6 +106,7 @@ function labelFontSize(d) {
   return "17px";
 }
 
+// Slightly reduce weight on tiny labels.
 function labelWeight(d) {
   const frequency = d.data.frequency;
 
@@ -106,6 +117,7 @@ function labelWeight(d) {
   return "800";
 }
 
+// Tooltip shown when hovering over treemap boxes or legend items.
 const treemapTooltip = d3.select("body")
   .append("div")
   .attr("id", "treemap-tooltip")
@@ -122,17 +134,20 @@ const treemapTooltip = d3.select("body")
   .style("z-index", "20")
   .style("color", "#1f3140");
 
+// Load the frequency distribution data and build the treemap.
 d3.csv("data/processed/frequency_distribution.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
   });
 
+  // Legend stays in frequency order, while the treemap is sorted by count.
   const legendData = [...data].sort(
     (a, b) => frequencyOrder.indexOf(a.frequency) - frequencyOrder.indexOf(b.frequency)
   );
 
   const treemapData = [...data].sort((a, b) => b.count - a.count);
 
+  // D3 hierarchy is needed for the treemap layout.
   const root = d3.hierarchy({ children: treemapData })
     .sum(d => d.count)
     .sort((a, b) => b.value - a.value);
@@ -144,6 +159,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .paddingOuter(0)
     .round(true)(root);
 
+  // Each tile represents one frequency group.
   const tiles = freqG.selectAll(".freq-tile")
     .data(root.leaves())
     .enter()
@@ -172,6 +188,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
       treemapTooltip.style("display", "none");
     })
     .on("click", function(event, d) {
+      // Clicking the same group again clears the selection.
       if (selectedFrequencyGroup === d.data.frequency) {
         selectedFrequencyGroup = null;
       } else {
@@ -192,6 +209,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("stroke", "#fffaf2")
     .attr("stroke-width", 1);
 
+  // Clip labels so text does not spill out of small boxes.
   tiles.append("clipPath")
     .attr("id", (d, i) => `treemap-label-clip-${i}`)
     .append("rect")
@@ -220,6 +238,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
     .attr("text-anchor", "middle")
     .text("Street Segments by Estimated Sweeps per Month");
 
+  // Build a small legend under the treemap.
   const legendG = freqSvg.append("g")
     .attr("class", "treemap-mini-legend")
     .attr("transform", `translate(${freqMargin.left},${freqHeight - 66})`);
@@ -261,6 +280,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
       treemapTooltip.style("display", "none");
     })
     .on("click", function(event, d) {
+      // Legend clicks work the same as clicking a treemap tile.
       if (selectedFrequencyGroup === d.frequency) {
         selectedFrequencyGroup = null;
       } else {
@@ -295,6 +315,7 @@ d3.csv("data/processed/frequency_distribution.csv").then(data => {
   console.error("Error loading frequency treemap data:", error);
 });
 
+// Update the treemap and legend styling based on the active selection.
 function updateFrequencySelection() {
   d3.selectAll(".freq-tile")
     .attr("opacity", function() {
@@ -339,11 +360,13 @@ function updateFrequencySelection() {
     });
 }
 
+// Called by the map when a selected street belongs to a frequency group.
 window.highlightFrequencyGroup = function(frequencyGroup) {
   selectedFrequencyGroup = frequencyGroup;
   updateFrequencySelection();
 };
 
+// Reset the frequency treemap back to normal.
 window.resetFrequencyHighlight = function() {
   selectedFrequencyGroup = null;
   updateFrequencySelection();
