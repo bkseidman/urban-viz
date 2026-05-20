@@ -1,9 +1,12 @@
+// Select the top streets SVG and read its size.
 const topSvg = d3.select("#top-streets");
 const topWidth = +topSvg.attr("width");
 const topHeight = +topSvg.attr("height");
 
+// Shared highlight color used when this chart links with the map.
 const TOP_STREET_HIGHLIGHT_COLOR = "#8d5aa7";
 
+// Margins leave space for the street names and axis labels.
 const topMargin = { top: 40, right: 55, bottom: 45, left: 120 };
 const topInnerWidth = topWidth - topMargin.left - topMargin.right;
 const topInnerHeight = topHeight - topMargin.top - topMargin.bottom;
@@ -11,6 +14,7 @@ const topInnerHeight = topHeight - topMargin.top - topMargin.bottom;
 const topG = topSvg.append("g")
   .attr("transform", `translate(${topMargin.left},${topMargin.top})`);
 
+// Tooltip shown when hovering over a street bar.
 const topStreetTooltip = d3.select("body")
   .append("div")
   .attr("id", "top-streets-tooltip")
@@ -27,6 +31,7 @@ const topStreetTooltip = d3.select("body")
   .style("z-index", "20")
   .style("color", "#1f3140");
 
+// Shorten long street names so the y-axis stays readable.
 function shortenLabel(label, maxLength) {
   if (label.length > maxLength) {
     return label.slice(0, maxLength) + "...";
@@ -35,11 +40,13 @@ function shortenLabel(label, maxLength) {
   return label;
 }
 
+// Load the segment-level schedule file and group rows by full street name.
 d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
   data.forEach(d => {
     d.monthly_frequency = +d.monthly_frequency;
   });
 
+  // This map stores one summary object for each corridor/street name.
   const streetMap = new Map();
 
   data.forEach(d => {
@@ -63,6 +70,7 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     }
   });
 
+  // Keep only the ten streets with the highest total estimated sweeping activity.
   const topData = Array.from(streetMap.values())
     .filter(d => d.segment_count > 0)
     .map(d => ({
@@ -74,6 +82,7 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     .sort((a, b) => b.total_frequency - a.total_frequency)
     .slice(0, 10);
 
+  // X encodes total sweeps, and Y lists the street names.
   const x = d3.scaleLinear()
     .domain([0, d3.max(topData, d => d.total_frequency)])
     .nice()
@@ -91,6 +100,7 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
     .attr("transform", `translate(0,${topInnerHeight})`)
     .call(d3.axisBottom(x).ticks(5));
 
+  // Draw the bars and connect hover/click interactions to the rest of the dashboard.
   topG.selectAll(".top-street-bar")
     .data(topData)
     .enter()
@@ -132,6 +142,7 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
       }
     });
 
+  // Add value labels at the end of each bar.
   topG.selectAll(".top-street-value")
     .data(topData)
     .enter()
@@ -161,6 +172,7 @@ d3.csv("data/processed/cnn_schedule_details.csv").then(data => {
   console.error("Error loading top streets data:", error);
 });
 
+// Called by the map when a street/corridor is selected somewhere else.
 window.highlightTopStreetBar = function(corridor) {
   d3.selectAll(".top-street-bar")
     .attr("opacity", function() {
@@ -176,6 +188,7 @@ window.highlightTopStreetBar = function(corridor) {
     });
 };
 
+// Reset the bar chart back to its normal view.
 window.resetTopStreetHighlight = function() {
   d3.selectAll(".top-street-bar")
     .attr("opacity", 0.9)
