@@ -1,9 +1,12 @@
+// Select the heatmap SVG and read its size.
 const heatSvg = d3.select("#heatmap");
 const heatWidth = +heatSvg.attr("width");
 const heatHeight = +heatSvg.attr("height");
 
+// Shared highlight color used for selected cells and labels.
 const HEATMAP_HIGHLIGHT_COLOR = "#8d5aa7";
 
+// Margins leave room for axis labels and the chart title.
 const heatMargin = { top: 60, right: 22, bottom: 72, left: 110 };
 const heatInnerWidth = heatWidth - heatMargin.left - heatMargin.right;
 const heatInnerHeight = heatHeight - heatMargin.top - heatMargin.bottom;
@@ -11,6 +14,7 @@ const heatInnerHeight = heatHeight - heatMargin.top - heatMargin.bottom;
 const heatG = heatSvg.append("g")
   .attr("transform", `translate(${heatMargin.left},${heatMargin.top})`);
 
+// These variables track selected cells and animation state.
 let selectedHeatmapCells = new Set();
 let heatmapValueByCell = new Map();
 let heatmapData = [];
@@ -22,9 +26,11 @@ let animationIsPlaying = false;
 let animationSelectionActive = false;
 let timelineIsDragging = false;
 
+// Fixed order for the heatmap rows and columns.
 const weekdayOrder = ["Mon", "Tues", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const timeOrder = ["12-2", "2-4", "4-6", "6-8", "8-10", "10-12", "12-14"];
 
+// Full labels used in tooltips.
 const weekdayDisplay = {
   Mon: "Monday",
   Tues: "Tuesday",
@@ -35,6 +41,7 @@ const weekdayDisplay = {
   Sun: "Sunday"
 };
 
+// Short labels used in the timeline.
 const weekdayShortDisplay = {
   Mon: "Mon",
   Tues: "Tue",
@@ -45,6 +52,7 @@ const weekdayShortDisplay = {
   Sun: "Sun"
 };
 
+// Converts time buckets into readable labels.
 const timeDisplay = {
   "12-2": "12–2 AM",
   "2-4": "2–4 AM",
@@ -55,6 +63,7 @@ const timeDisplay = {
   "12-14": "12–2 PM"
 };
 
+// Tooltip shown when hovering over heatmap cells and axis labels.
 const heatmapTooltip = d3.select("body")
   .append("div")
   .attr("id", "heatmap-tooltip")
@@ -71,10 +80,12 @@ const heatmapTooltip = d3.select("body")
   .style("z-index", "20")
   .style("color", "#1f3140");
 
+// Make a consistent key for each weekday and time bucket.
 function cellKey(weekday, timeBucket) {
   return `${weekday}|${timeBucket}`;
 }
 
+// Add up the values for all currently selected cells.
 function selectedHeatmapValueTotal() {
   let total = 0;
 
@@ -85,6 +96,7 @@ function selectedHeatmapValueTotal() {
   return total;
 }
 
+// Send the selected heatmap cells to the map/dashboard.
 function pushHeatmapSelectionToDashboard() {
   const selectedCellList = Array.from(selectedHeatmapCells).join(", ");
   const selectedTotal = selectedHeatmapValueTotal();
@@ -94,6 +106,7 @@ function pushHeatmapSelectionToDashboard() {
   }
 }
 
+// Check whether a full row is active.
 function rowIsActive(timeBucket) {
   const rowCells = heatmapData
     .filter(d => d.time_bucket === timeBucket)
@@ -102,6 +115,7 @@ function rowIsActive(timeBucket) {
   return rowCells.some(cell => selectedHeatmapCells.has(cell));
 }
 
+// Check whether a full column is active.
 function columnIsActive(weekday) {
   const colCells = heatmapData
     .filter(d => d.weekday === weekday)
@@ -110,6 +124,7 @@ function columnIsActive(weekday) {
   return colCells.some(cell => selectedHeatmapCells.has(cell));
 }
 
+// Update cell opacity, outlines, and axis label styling.
 function updateHeatmapSelection() {
   d3.selectAll(".heatmap-cell")
     .attr("opacity", function() {
@@ -139,6 +154,7 @@ function updateHeatmapSelection() {
     .style("font-weight", d => rowIsActive(d) ? "700" : "400");
 }
 
+// Clear animated selection before a manual click selection.
 function resetAnimationButKeepManualSelection() {
   if (animationSelectionActive) {
     selectedHeatmapCells = new Set();
@@ -151,6 +167,7 @@ function resetAnimationButKeepManualSelection() {
   updateTimelineUI(animationIndex);
 }
 
+// Toggle one heatmap cell on or off.
 function toggleSingleCell(cell) {
   resetAnimationButKeepManualSelection();
 
@@ -165,6 +182,7 @@ function toggleSingleCell(cell) {
   pushHeatmapSelectionToDashboard();
 }
 
+// Toggle all cells for one weekday.
 function toggleWeekdaySelection(weekday) {
   resetAnimationButKeepManualSelection();
 
@@ -185,6 +203,7 @@ function toggleWeekdaySelection(weekday) {
   pushHeatmapSelectionToDashboard();
 }
 
+// Toggle all cells for one time row.
 function toggleTimeSelection(timeBucket) {
   resetAnimationButKeepManualSelection();
 
@@ -209,6 +228,7 @@ function toggleTimeSelection(timeBucket) {
    TIMELINE ANIMATION + SLIDER
 ========================================================= */
 
+// Build one animation frame for every weekday/time combination.
 function buildAnimationFrames() {
   animationFrames = [];
 
@@ -224,6 +244,7 @@ function buildAnimationFrames() {
   });
 }
 
+// Update the play button, progress bar, dot, and label.
 function updateTimelineUI(frameIndex) {
   const playButton = document.querySelector("#heatmap-play");
   const progress = document.querySelector("#timeline-progress");
@@ -259,6 +280,7 @@ function updateTimelineUI(frameIndex) {
   }
 }
 
+// Apply one frame of the heatmap animation to the dashboard.
 function applyAnimationFrame(frameIndex) {
   if (!animationFrames.length) {
     return;
@@ -279,6 +301,7 @@ function applyAnimationFrame(frameIndex) {
   }
 }
 
+// Move to the next animation frame.
 function playNextAnimationFrame() {
   applyAnimationFrame(animationIndex);
 
@@ -290,6 +313,7 @@ function playNextAnimationFrame() {
   animationIndex += 1;
 }
 
+// Start cycling through the weekday/time cells.
 function startHeatmapAnimation() {
   if (!animationFrames.length) {
     return;
@@ -308,6 +332,7 @@ function startHeatmapAnimation() {
   }, 850);
 }
 
+// Pause the animation without clearing the current frame.
 function pauseHeatmapAnimation() {
   if (animationTimer) {
     window.clearInterval(animationTimer);
@@ -318,6 +343,7 @@ function pauseHeatmapAnimation() {
   updateTimelineUI(animationIndex);
 }
 
+// Stop the animation, and optionally clear the animated selection.
 function stopHeatmapAnimation(clearAnimatedSelection) {
   if (animationTimer) {
     window.clearInterval(animationTimer);
@@ -336,6 +362,7 @@ function stopHeatmapAnimation(clearAnimatedSelection) {
   updateTimelineUI(animationIndex);
 }
 
+// Play or pause when the button is clicked.
 function toggleHeatmapAnimation() {
   if (animationIsPlaying) {
     pauseHeatmapAnimation();
@@ -349,6 +376,7 @@ function toggleHeatmapAnimation() {
   startHeatmapAnimation();
 }
 
+// Convert a mouse/pointer location on the timeline into a frame index.
 function frameIndexFromTimelineEvent(event) {
   const track = document.querySelector(".timeline-track");
 
@@ -363,6 +391,7 @@ function frameIndexFromTimelineEvent(event) {
   return Math.round(ratio * (animationFrames.length - 1));
 }
 
+// Jump the animation to the point selected on the timeline.
 function scrubTimeline(event) {
   if (!animationFrames.length) {
     return;
@@ -374,12 +403,14 @@ function scrubTimeline(event) {
   applyAnimationFrame(newIndex);
 }
 
+// Start dragging the timeline.
 function startTimelineDrag(event) {
   event.preventDefault();
   timelineIsDragging = true;
   scrubTimeline(event);
 }
 
+// Continue dragging the timeline.
 function moveTimelineDrag(event) {
   if (!timelineIsDragging) {
     return;
@@ -388,10 +419,12 @@ function moveTimelineDrag(event) {
   scrubTimeline(event);
 }
 
+// Stop dragging the timeline.
 function stopTimelineDrag() {
   timelineIsDragging = false;
 }
 
+// Set up pointer controls for the timeline slider.
 function initTimelineSlider() {
   const track = document.querySelector(".timeline-track");
   const dot = document.querySelector("#timeline-dot");
@@ -411,12 +444,14 @@ function initTimelineSlider() {
   window.addEventListener("pointercancel", stopTimelineDrag);
 }
 
+// Let the map stop the animation when another view is selected.
 window.stopHeatmapAnimation = stopHeatmapAnimation;
 
 /* =========================================================
    HEATMAP SETUP
 ========================================================= */
 
+// Load the processed heatmap table and draw the chart.
 d3.csv("data/processed/time_heatmap.csv").then(data => {
   data.forEach(d => {
     d.count = +d.count;
@@ -455,6 +490,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
   const yAxisG = heatG.append("g")
     .call(d3.axisLeft(y).tickFormat(d => timeDisplay[d] || d));
 
+  // Weekday labels can be clicked to select a whole column.
   xAxisG.selectAll(".tick text")
     .attr("class", "weekday-axis-label")
     .style("cursor", "pointer")
@@ -478,6 +514,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
       toggleWeekdaySelection(weekday);
     });
 
+  // Time labels can be clicked to select a whole row.
   yAxisG.selectAll(".tick text")
     .attr("class", "time-axis-label")
     .style("cursor", "pointer")
@@ -501,6 +538,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
       toggleTimeSelection(timeBucket);
     });
 
+  // Draw the heatmap cells.
   heatG.selectAll("rect")
     .data(data)
     .enter()
@@ -537,6 +575,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
       toggleSingleCell(cellKey(d.weekday, d.time_bucket));
     });
 
+  // Add the count labels inside the heatmap cells.
   heatG.selectAll(".cell-label")
     .data(data)
     .enter()
@@ -569,6 +608,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
     .attr("text-anchor", "middle")
     .text("Time Window");
 
+  // Connect the play button and timeline controls after the data loads.
   const playButton = document.querySelector("#heatmap-play");
   if (playButton) {
     playButton.addEventListener("click", toggleHeatmapAnimation);
@@ -583,6 +623,7 @@ d3.csv("data/processed/time_heatmap.csv").then(data => {
   console.error("Error loading heatmap data:", error);
 });
 
+// Called by the map when a selected street has matching heatmap cells.
 window.highlightHeatmapCells = function(heatmapCells) {
   stopHeatmapAnimation(true);
 
@@ -604,6 +645,7 @@ window.highlightHeatmapCells = function(heatmapCells) {
   updateHeatmapSelection();
 };
 
+// Reset the heatmap back to its normal view.
 window.resetHeatmapHighlight = function() {
   stopHeatmapAnimation(true);
   selectedHeatmapCells = new Set();
