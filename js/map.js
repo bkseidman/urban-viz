@@ -1,7 +1,9 @@
+// Select the map SVG and read its size.
 const svg = d3.select("#map");
 const width = +svg.attr("width");
 const height = +svg.attr("height");
 
+// These variables track what is currently selected on the dashboard.
 let selectedStreet = null;
 let activeMapMode = "none";
 let activeFrequencyGroup = null;
@@ -9,8 +11,10 @@ let activeHeatmapCells = new Set();
 let activeHeatmapValue = 0;
 let activeCorridor = null;
 
+// Shared color used for selected or highlighted streets.
 const MAP_HIGHLIGHT_COLOR = "#8d5aa7";
 
+// Get the best available street name from the GeoJSON properties.
 function getStreetName(d) {
   if (d.properties.schedule_details && d.properties.schedule_details.corridor) {
     return d.properties.schedule_details.corridor;
@@ -27,10 +31,12 @@ function getStreetName(d) {
   );
 }
 
+// Convert 1/0 style values into readable text.
 function yesNo(value) {
   return value === "1" ? "Yes" : "No";
 }
 
+// Use Unknown when a value is missing.
 function valueOrUnknown(value) {
   if (value === undefined || value === null || value === "") {
     return "Unknown";
@@ -39,6 +45,7 @@ function valueOrUnknown(value) {
   return value;
 }
 
+// Escape text before adding it into HTML.
 function escapeHTML(value) {
   return String(valueOrUnknown(value))
     .replaceAll("&", "&amp;")
@@ -48,6 +55,7 @@ function escapeHTML(value) {
     .replaceAll("'", "&#039;");
 }
 
+// Get the heatmap cells connected to a street segment.
 function getStreetCells(d) {
   const details = d.properties.schedule_details;
 
@@ -61,6 +69,7 @@ function getStreetCells(d) {
     .filter(cell => cell !== "" && !cell.includes("Other"));
 }
 
+// Check if a street matches the selected heatmap cells.
 function streetMatchesActiveHeatmap(d) {
   if (activeHeatmapCells.size === 0) {
     return true;
@@ -70,6 +79,7 @@ function streetMatchesActiveHeatmap(d) {
   return cells.some(cell => activeHeatmapCells.has(cell));
 }
 
+// Check if a street matches the selected frequency group.
 function streetMatchesActiveFrequency(d) {
   if (!activeFrequencyGroup) {
     return true;
@@ -78,6 +88,7 @@ function streetMatchesActiveFrequency(d) {
   return d.properties.frequency_group === activeFrequencyGroup;
 }
 
+// Check if a street belongs to the selected full street/corridor.
 function streetMatchesActiveCorridor(d) {
   const details = d.properties.schedule_details;
 
@@ -88,10 +99,12 @@ function streetMatchesActiveCorridor(d) {
   return details.corridor === activeCorridor;
 }
 
+// Combined filter check used by heatmap and frequency selections.
 function streetMatchesActiveFilters(d) {
   return streetMatchesActiveFrequency(d) && streetMatchesActiveHeatmap(d);
 }
 
+// When a street is clicked, update the other charts to match it.
 function updateLinkedViews(d) {
   const details = d.properties.schedule_details;
 
@@ -116,6 +129,7 @@ function updateLinkedViews(d) {
    DETAIL PANEL HELPERS
 ========================================================= */
 
+// Normalize weekday names into shorter display labels.
 function normalizeDay(day) {
   const cleaned = String(day).trim().toLowerCase();
 
@@ -143,6 +157,7 @@ function normalizeDay(day) {
   return dayMap[cleaned] || day;
 }
 
+// Turn the cleaned days field into an array.
 function parseDaysCleaned(daysCleaned) {
   if (!daysCleaned || daysCleaned === "Unknown") {
     return [];
@@ -154,6 +169,7 @@ function parseDaysCleaned(daysCleaned) {
     .filter(day => day !== "");
 }
 
+// Render the weekday chips in the side panel.
 function renderWeekdayChips(daysCleaned) {
   const activeDays = new Set(parseDaysCleaned(daysCleaned));
   const weekdayOrder = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -169,6 +185,7 @@ function renderWeekdayChips(daysCleaned) {
   `;
 }
 
+// Split comma-separated fields into cleaner lists.
 function splitList(value) {
   if (!value || value === "Unknown") {
     return [];
@@ -180,6 +197,7 @@ function splitList(value) {
     .filter(d => d !== "");
 }
 
+// Make side swept values easier to read.
 function cleanSideSwept(value) {
   const sideMap = {
     L: "Left",
@@ -189,6 +207,7 @@ function cleanSideSwept(value) {
   return splitList(value).map(side => sideMap[side] || side);
 }
 
+// Render small pill labels for details like side or block.
 function renderPills(values, className = "") {
   if (!values || values.length === 0) {
     return `<span class="detail-pill">Unknown</span>`;
@@ -199,6 +218,7 @@ function renderPills(values, className = "") {
   `).join("");
 }
 
+// Default side panel before the user clicks anything.
 function renderEmptyDetailPanel() {
   d3.select("#detail-panel").html(`
     <h2 class="detail-panel-title">Selected Street</h2>
@@ -206,6 +226,7 @@ function renderEmptyDetailPanel() {
   `);
 }
 
+// Fill the detail panel with information for one selected street segment.
 function updateDetailPanel(d) {
   const props = d.properties;
   const details = props.schedule_details;
@@ -318,6 +339,7 @@ function updateDetailPanel(d) {
   `);
 }
 
+// Show the side panel when frequency and/or heatmap filters are active.
 function updateCombinedSelectionPanel(matchCount) {
   const hasFrequency = activeFrequencyGroup !== null;
   const hasHeatmap = activeHeatmapCells.size > 0;
@@ -373,6 +395,7 @@ function updateCombinedSelectionPanel(matchCount) {
   `);
 }
 
+// Show the side panel when a full street/corridor is selected from the bar chart.
 function updateCorridorDetailPanel(corridor, totalFrequency, segmentCount, averageFrequency) {
   d3.select("#detail-panel").html(`
     <h2 class="detail-panel-title">Full Street Selection</h2>
@@ -418,6 +441,7 @@ function updateCorridorDetailPanel(corridor, totalFrequency, segmentCount, avera
    MAP SETUP
 ========================================================= */
 
+// Load the street geometry and processed schedule data together.
 Promise.all([
   d3.json("data/raw/active_streets.geojson"),
   d3.csv("data/processed/cnn_totals.csv"),
@@ -427,16 +451,19 @@ Promise.all([
   const freqMap = new Map();
   const detailsMap = new Map();
 
+  // Store frequency groups by CNN so they can be joined to the GeoJSON.
   freqData.forEach(d => {
     freqMap.set(String(d.cnn), {
       frequency_group: d.frequency_group
     });
   });
 
+  // Store full schedule details by CNN for the detail panel and tooltips.
   scheduleDetails.forEach(d => {
     detailsMap.set(String(d.cnn), d);
   });
 
+  // Attach the processed data to each GeoJSON street segment.
   geoData.features.forEach(feature => {
     const cnn = String(feature.properties.cnn);
     const freqMatch = freqMap.get(cnn);
@@ -453,11 +480,13 @@ Promise.all([
     }
   });
 
+  // Fit the map projection to San Francisco street geometry.
   const projection = d3.geoMercator()
     .fitSize([width, height], geoData);
 
   const path = d3.geoPath().projection(projection);
 
+  // Frequency group order used by the map legend and colors.
   const order = [
     "1",
     "2",
@@ -497,6 +526,7 @@ Promise.all([
   const mapGroup = svg.append("g")
     .attr("class", "map-group");
 
+  // Zoom lets the user inspect dense parts of the city.
   const zoom = d3.zoom()
     .scaleExtent([1, 12])
     .translateExtent([
@@ -510,6 +540,7 @@ Promise.all([
   svg.call(zoom);
   svg.on("dblclick.zoom", null);
 
+  // Base map layer for all streets.
   mapGroup.selectAll(".base")
     .data(geoData.features)
     .enter()
@@ -521,6 +552,7 @@ Promise.all([
     .attr("stroke-width", 0.8)
     .attr("opacity", 0.78);
 
+  // Overlay layer for streets that have sweeping data.
   const streets = mapGroup.selectAll(".overlay")
     .data(geoData.features.filter(d => d.properties.frequency_group !== "No data"))
     .enter()
@@ -583,6 +615,7 @@ Promise.all([
       updateLinkedViews(d);
     });
 
+  // Build the map legend.
   const legend = svg.append("g")
     .attr("class", "legend")
     .attr("transform", "translate(20,20)");
@@ -614,6 +647,7 @@ Promise.all([
     .text(d => d)
     .style("font-size", "12px");
 
+  // Reapply map styling based on the current dashboard mode.
   function applyMapStyles() {
     streets
       .interrupt()
@@ -679,6 +713,7 @@ Promise.all([
       });
   }
 
+  // Update the map after a frequency or heatmap filter changes.
   function updateFilterPanel() {
     const hasFrequency = activeFrequencyGroup !== null;
     const hasHeatmap = activeHeatmapCells.size > 0;
@@ -701,6 +736,7 @@ Promise.all([
     updateCombinedSelectionPanel(matchCount);
   }
 
+  // Called by the treemap when a frequency group is selected.
   window.setFrequencySelection = function(frequencyGroup) {
     if (window.stopHeatmapAnimation) {
       window.stopHeatmapAnimation(true);
@@ -717,6 +753,7 @@ Promise.all([
     updateFilterPanel();
   };
 
+  // Called by the heatmap when one or more heatmap cells are selected.
   window.setHeatmapSelection = function(heatmapCells, heatmapValue) {
     selectedStreet = null;
     activeCorridor = null;
@@ -736,6 +773,7 @@ Promise.all([
     updateFilterPanel();
   };
 
+  // Called by the heatmap animation as it moves through time cells.
   window.setAnimatedHeatmapSelection = function(heatmapCell, heatmapValue) {
     selectedStreet = null;
     activeCorridor = null;
@@ -768,6 +806,7 @@ Promise.all([
     updateCombinedSelectionPanel(matchCount);
   };
 
+  // Called by the top streets bar chart when a full street/corridor is selected.
   window.highlightMapByCorridor = function(corridor, summary) {
     if (window.stopHeatmapAnimation) {
       window.stopHeatmapAnimation(true);
@@ -816,6 +855,7 @@ Promise.all([
     updateCorridorDetailPanel(corridor, totalFrequency, segmentCount, averageFrequency);
   };
 
+  // Reset the whole dashboard back to the default view.
   window.resetDashboardSelection = function() {
     if (window.stopHeatmapAnimation) {
       window.stopHeatmapAnimation(true);
@@ -844,6 +884,7 @@ Promise.all([
     }
   };
 
+  // Connect the reset button to the dashboard reset function.
   d3.select("#reset-selection").on("click", function() {
     window.resetDashboardSelection();
   });
